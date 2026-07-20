@@ -1,10 +1,7 @@
 @import "tailwindcss";
 
-/* ============================================================
-   CSS VARIABLES
-   ============================================================ */
-:root {
-  /* Primary Colors */
+@theme {
+  /* Primary Colors - Lavender Theme */
   --color-primary-50: #f5f5ff;
   --color-primary-100: #e8e8ff;
   --color-primary-200: #d3d3ff;
@@ -100,62 +97,74 @@ body {
 }
 
 /* ============================================================
-   CONTAINER
+   UTILITY CLASSES
    ============================================================ */
-.container-custom {
-  max-width: 80rem;
-  margin: 0 auto;
-  padding: 0 1.5rem;
-}
-
-@media (min-width: 640px) {
-  .container-custom {
-    padding: 0 2rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .container-custom {
-    padding: 0 3rem;
-  }
-}
-
-/* ============================================================
-   UTILITY CLASSES (Tailwind compatible)
-   ============================================================ */
-
-/* Buttons */
 .btn-primary {
-  @apply inline-flex items-center justify-center gap-2 px-8 py-3.5 text-base font-semibold text-white bg-primary-600 rounded-xl border-none cursor-pointer no-underline transition-all duration-300 shadow-[0_4px_16px_rgba(87,87,153,0.25)];
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  background: var(--color-primary-600);
+  border-radius: 0.75rem;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(87, 87, 153, 0.25);
 }
 
 .btn-primary:hover {
-  @apply bg-primary-800 -translate-y-0.5 shadow-[0_8px_32px_rgba(87,87,153,0.35)];
+  background: var(--color-primary-800);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(87, 87, 153, 0.35);
 }
 
 .btn-secondary {
-  @apply inline-flex items-center justify-center gap-2 px-8 py-3.5 text-base font-semibold text-primary-600 bg-white border-2 border-primary-200 rounded-xl cursor-pointer no-underline transition-all duration-300;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-primary-600);
+  background: white;
+  border: 2px solid var(--color-primary-200);
+  border-radius: 0.75rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
 }
 
 .btn-secondary:hover {
-  @apply border-primary-400 -translate-y-0.5 shadow-md;
+  border-color: var(--color-primary-400);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
-/* Cards */
 .card {
-  @apply bg-white rounded-2xl p-6 shadow-sm border border-primary-200/30 transition-all duration-300;
+  background: white;
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(211, 211, 255, 0.3);
+  transition: all 0.3s ease;
 }
 
 .card:hover {
-  @apply -translate-y-1 shadow-lg border-primary-300;
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-primary-300);
 }
 
-/* Typography */
 .font-display {
   font-family: var(--font-display);
 }
 
-/* Animations */
 .animate-float {
   animation: float 4s ease-in-out infinite;
 }
@@ -164,7 +173,6 @@ body {
   animation: fadeUp 0.6s ease-out;
 }
 
-/* Scrollbar Hide */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -173,9 +181,20 @@ body {
   display: none;
 }
 
-/* Section Padding */
 .section-padding {
-  @apply py-16 md:py-20 lg:py-24;
+  padding: 5rem 0;
+}
+
+@media (min-width: 768px) {
+  .section-padding {
+    padding: 6rem 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .section-padding {
+    padding: 8rem 0;
+  }
 }
 
 /* ============================================================
@@ -213,5 +232,26 @@ body {
 
   ::-webkit-scrollbar-thumb {
     background: rgba(157, 157, 204, 0.3);
+  }
+}
+
+/* ============================================================
+   CONTAINER
+   ============================================================ */
+.container-custom {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .container-custom {
+    padding: 0 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-custom {
+    padding: 0 3rem;
   }
 }
