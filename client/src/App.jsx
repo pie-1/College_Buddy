@@ -1,23 +1,34 @@
-import { Routes, Route } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from './context/AuthContext';
-import Navbar from './components/common/Navbar';
-import Footer from './components/common/Footer';
+// import { Routes, Route } from 'react-router-dom';
+// import { Toaster } from 'react-hot-toast';
+// import { AuthProvider } from './context/AuthContext';
+// import Navbar from './components/common/Navbar';
+// import Footer from './components/common/Footer';
 
-// Pages
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import Catalogue from './pages/Catalogue';
-import Profile from './pages/Profile';
-import Inbox from './pages/Inbox';
-import Events from './pages/Events';
-import Projects from './pages/Projects';
-import AddItem from './pages/AddItem';
+// // Pages
+// import Home from './pages/Home';
+// import Login from './pages/Login';
+// import Register from './pages/Register';
+// import Dashboard from './pages/Dashboard';
+// import Catalogue from './pages/Catalogue';
+// import Profile from './pages/Profile';
+// import Inbox from './pages/Inbox';
+// import Events from './pages/Events';
+// import Projects from './pages/Projects';
+// import AddItem from './pages/AddItem';
+
+// Component Preview (for testing individual components)
+ import ComponentPreview from './pages/ComponentPreview';
 
 function App() {
-  return (
+  // ============================================================
+  // OPTION 1: Component Preview Mode (Uncomment to test components)
+  // ============================================================
+   return <ComponentPreview />;}
+
+  // ============================================================
+  // OPTION 2: Full App Mode (Default - comment out when using preview)
+  // ============================================================
+ /* return (
     <AuthProvider>
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Navbar />
@@ -42,4 +53,4 @@ function App() {
   );
 }
 
-export default App;
+export default App;*/
