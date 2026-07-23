@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Grid, List, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -437,3 +436,14 @@ const Catalogue = () => {
 
 export default Catalogue;
 
+
+function Catalogue() {
+  return (
+    <div>
+      <h1>Catalogue Page</h1>
+    </div>
+  );
+}
+
+export default Catalogue;
+ 
