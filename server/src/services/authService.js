@@ -1,7 +1,6 @@
 import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { sendVerificationEmail } from './emailService.js';
 
 /**
  * Auth Service
@@ -37,9 +36,6 @@ export const registerUser = async (userData) => {
     graduationYear,
     verificationToken,
   });
-
-  // Send verification email (don't await - let it run in background)
-  sendVerificationEmail(user.email, verificationToken).catch(console.error);
 
   return user;
 };

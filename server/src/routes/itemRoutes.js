@@ -1,5 +1,6 @@
 import express from 'express';
 import { protect } from '../middleware/auth.js';
+import { validateItem } from '../middleware/validation.js';
 import {
   getItems,
   getItem,
@@ -18,7 +19,7 @@ router.get('/:id', getItem);
 // Protected routes
 router.use(protect);
 router.get('/my/items', getMyItems);
-router.post('/', createItem);
+router.post('/', validateItem, createItem);
 router.put('/:id', updateItem);
 router.delete('/:id', deleteItem);
 

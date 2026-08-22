@@ -47,7 +47,7 @@ export const sendVerificationEmail = async (email, token) => {
     await transporter.sendMail(mailOptions);
     console.log(`📧 Verification email sent to ${email}`);
   } catch (error) {
-    console.error('Email send error:', error);
+    console.error('Email send error:', error.message);
     // Don't throw - registration should still work
   }
 };
@@ -80,6 +80,6 @@ export const sendResetPasswordEmail = async (email, token) => {
     await transporter.sendMail(mailOptions);
     console.log(`📧 Reset password email sent to ${email}`);
   } catch (error) {
-    console.error('Email send error:', error);
+    console.error('Email send error:', error.message);
   }
 };
