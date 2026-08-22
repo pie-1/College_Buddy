@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, BookOpen, Wrench, Gamepad2, Laptop, Search } from 'lucide-react';
+// ✅ REMOVED 'Search' from imports below
+import { ArrowRight, BookOpen, Wrench, Gamepad2, Laptop } from 'lucide-react';
 
 const Home = () => {
   const categories = [

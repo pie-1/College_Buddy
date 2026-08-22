@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, User, LogOut, Home, BookOpen, Calendar, Briefcase, Plus, MessageCircle, Search } from 'lucide-react';
+// ✅ REMOVED 'Home' from imports below
+import { Menu, X, User, LogOut, BookOpen, Calendar, Briefcase, Plus, MessageCircle, Search } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const Navbar = () => {

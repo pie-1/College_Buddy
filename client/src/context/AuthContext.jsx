@@ -9,15 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      fetchUser();
-    } else {
-      setLoading(false);
-    }
-  }, []);
-
+  // ✅ MOVED fetchUser BEFORE useEffect
   const fetchUser = async () => {
     try {
       const response = await api.get('/auth/me');
@@ -29,6 +21,15 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      fetchUser();
+    } else {
+      setLoading(false);
+    }
+  }, []);
 
   const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
