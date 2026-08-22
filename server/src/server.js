@@ -7,7 +7,6 @@ import { Server } from 'socket.io';
 import connectDB from './config/database.js';
 import { setupSocket } from './config/socket.js';
 
-
 // Routes
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
@@ -16,6 +15,9 @@ import borrowRoutes from './routes/borrowRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
 import projectRoutes from './routes/projectRoutes.js';
+
+// ✅ Import validation (ADD THIS)
+import { validateRegister, validateLogin, validateItem, validateBorrow } from './middleware/validation.js';
 
 dotenv.config();
 
@@ -43,11 +45,20 @@ connectDB();
 // socket.io
 setupSocket(io);
 
-// Routes
+// Routes (UPDATED with validation middleware)
+// ✅ Updated auth routes with validation
 app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
+// The validation is now inside authRoutes.js
+
+// ✅ Updated item routes with validation
 app.use('/api/items', itemRoutes);
+// The validation is now inside itemRoutes.js
+
+// ✅ Updated borrow routes with validation
 app.use('/api/borrow', borrowRoutes);
+// The validation is now inside borrowRoutes.js
+
+app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/projects', projectRoutes);
@@ -68,4 +79,4 @@ httpServer.listen(PORT,() => {
     console.log(`Server is running on port ${PORT}`);
 });
 
-export { io };  
+export { io };
