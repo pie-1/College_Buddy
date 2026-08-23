@@ -8,12 +8,13 @@ import {
   getMe,
 } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
+import { validateRegister, validateLogin } from '../middleware/validation.js';
 
 const router = express.Router();
 
-// Public routes
-router.post('/register', register);
-router.post('/login', login);
+// Public routes with validation
+router.post('/register', validateRegister, register);
+router.post('/login', validateLogin, login);
 router.get('/verify-email/:token', verifyEmail);
 router.post('/refresh-token', refreshToken);
 
@@ -21,6 +22,5 @@ router.post('/refresh-token', refreshToken);
 router.use(protect);
 router.post('/logout', logout);
 router.get('/me', getMe);
-
 
 export default router;
