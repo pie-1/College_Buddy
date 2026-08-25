@@ -1,59 +1,96 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import api from '../api/client';
+// Remove axios import if not using it
+// import axios from 'axios';
 
 const AuthContext = createContext();
-
-export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Check for existing session
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      fetchUser();
-    } else {
-      setLoading(false);
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        localStorage.removeItem('user');
+      }
     }
+    setLoading(false);
   }, []);
 
-  const fetchUser = async () => {
-    try {
-      const response = await api.get('/auth/me');
-      setUser(response.data);
-    } catch (error) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // ✅ MOCK LOGIN - No backend needed
   const login = async (email, password) => {
-    const response = await api.post('/auth/login', { email, password });
-    localStorage.setItem('accessToken', response.data.accessToken);
-    localStorage.setItem('refreshToken', response.data.refreshToken);
-    setUser(response.data.user);
-    return response.data;
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Mock user for testing
+    const mockUser = {
+      id: 1,
+      name: 'Test User',
+      email: email,
+      department: 'computer',
+      year: '3',
+      profileImage: null,
+    };
+
+    // Store in localStorage
+    localStorage.setItem('user', JSON.stringify(mockUser));
+    setUser(mockUser);
+
+    return { success: true };
   };
 
-  const register = async (userData) => {
-    const response = await api.post('/auth/register', userData);
-    return response.data;
+  // ✅ MOCK REGISTER - No backend needed
+  const register = async (name, email, password, additionalData = {}) => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const mockUser = {
+      id: Date.now(),
+      name: name,
+      email: email,
+      department: additionalData.department || 'common',
+      year: additionalData.year || '1',
+      profileImage: null,
+    };
+
+    localStorage.setItem('user', JSON.stringify(mockUser));
+    setUser(mockUser);
+
+    return { success: true };
   };
 
   const logout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
     setUser(null);
   };
 
-  const value = { user, loading, login, register, logout, fetchUser };
+  const updateUser = (updatedData) => {
+    const updatedUser = { ...user, ...updatedData };
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = {
+    user,
+    loading,
+    login,
+    register,
+    logout,
+    updateUser,
+    isAuthenticated: !!user,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
