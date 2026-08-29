@@ -1,6 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext.jsx';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 

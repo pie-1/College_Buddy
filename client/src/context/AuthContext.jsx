@@ -1,20 +1,16 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../api/client';
-
-const AuthContext = createContext();
-
-export const useAuth = () => useContext(AuthContext);
+import { AuthContext } from './authContext.js';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ MOVED fetchUser BEFORE useEffect
   const fetchUser = async () => {
     try {
       const response = await api.get('/auth/me');
       setUser(response.data);
-    } catch (error) {
+    } catch {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
     } finally {

@@ -28,4 +28,4 @@ jobs:
     - name: Build Frontend
       run: |
         cd client
-        npm run build || true
+        npm run build
