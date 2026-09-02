@@ -86,6 +86,9 @@ const CreatePage = () => {
         if (!/^\d+(\.\d{1,2})?$/.test(value)) {
           return 'Enter a valid price (e.g. 100 or 100.50)';
         }
+        if (parseFloat(value) <= 0) {
+          return 'Price must be greater than 0';
+        }
         return true;
       },
     },
@@ -338,7 +341,7 @@ const CreatePage = () => {
                     step="0.01"
                     min="0"
                     {...register('price', validator.price)}
-                    placeholder={listingType === 'rent' ? 'Daily rental price' : 'Selling price'}
+                    placeholder={listingType === 'rent' ? 'Daily rental price (Rs.)' : 'Selling price (Rs.)'}
                     className={`w-full pl-10 pr-4 py-3 bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/30 transition ${
                       errors.price ? 'border-red-300 focus:border-red-400' : 'border-gray-200 focus:border-primary-500'
                     }`}
@@ -347,6 +350,37 @@ const CreatePage = () => {
                 {errors.price && (
                   <p className="text-xs text-red-500 mt-1">{errors.price.message}</p>
                 )}
+                {/* Quick price suggestions */}
+                <div className="flex gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setValue('price', '100')}
+                    className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full transition"
+                  >
+                    Rs. 100
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setValue('price', '250')}
+                    className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full transition"
+                  >
+                    Rs. 250
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setValue('price', '500')}
+                    className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full transition"
+                  >
+                    Rs. 500
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setValue('price', '1000')}
+                    className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full transition"
+                  >
+                    Rs. 1000
+                  </button>
+                </div>
               </div>
             )}
 
