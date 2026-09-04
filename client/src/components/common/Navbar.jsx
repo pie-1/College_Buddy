@@ -20,7 +20,9 @@ import {
   Sun,
   Moon,
   Bell,
-  UserCircle
+  UserCircle,
+  Users,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -44,12 +46,23 @@ const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Load dark mode preference
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
   // Toggle dark mode
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
     }
   }, [isDarkMode]);
 
@@ -70,6 +83,7 @@ const Navbar = () => {
 
   const navLinks = [
     { to: '/catalogue', label: 'Browse', icon: BookOpen },
+    { to: '/connections', label: 'Connections', icon: Users },
     { to: '/events', label: 'Events', icon: Calendar },
     { to: '/projects', label: 'Projects', icon: Briefcase },
   ];
@@ -78,6 +92,7 @@ const Navbar = () => {
   const profileItems = [
     { to: '/dashboard', label: 'Dashboard', icon: Home },
     { to: '/profile', label: 'My Profile', icon: UserCircle },
+    { to: '/connections', label: 'Connections', icon: Users },
     { to: '/inbox', label: 'Inbox', icon: MessageCircle, badge: 3 },
     { to: '/settings', label: 'Settings', icon: Settings },
     { to: '/help', label: 'Help & Support', icon: HelpCircle },
@@ -122,10 +137,15 @@ const Navbar = () => {
                 <Link
                   key={link.to}
                   to={link.to}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-800/50 transition-all"
+                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-all ${
+                    link.label === 'Connections'
+                      ? 'bg-primary-50 dark:bg-primary-800/50 text-primary-600 dark:text-primary-400'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-800/50'
+                  }`}
                 >
                   <Icon size={18} />
                   {link.label}
+                  
                 </Link>
               );
             })}
@@ -218,6 +238,11 @@ const Navbar = () => {
                                   {item.badge}
                                 </span>
                               )}
+                              {item.label === 'Connections' && (
+                                <span className="px-2 py-0.5 text-xs bg-primary-500 text-white rounded-full">
+                                  New
+                                </span>
+                              )}
                             </Link>
                           );
                         })}
@@ -307,6 +332,11 @@ const Navbar = () => {
                   >
                     <Icon size={20} />
                     {link.label}
+                    {link.label === 'Connections' && (
+                      <span className="ml-1 text-xs bg-primary-500 text-white px-1.5 py-0.5 rounded-full">
+                        New
+                      </span>
+                    )}
                   </Link>
                 );
               })}
@@ -326,6 +356,16 @@ const Navbar = () => {
                     className="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-800/50 rounded-xl transition"
                   >
                     <User size={20} /> Dashboard
+                  </Link>
+                  <Link
+                    to="/connections"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-800/50 rounded-xl transition"
+                  >
+                    <Users size={20} /> Connections
+                    <span className="ml-1 text-xs bg-primary-500 text-white px-1.5 py-0.5 rounded-full">
+                      New
+                    </span>
                   </Link>
                   <Link
                     to="/inbox"
