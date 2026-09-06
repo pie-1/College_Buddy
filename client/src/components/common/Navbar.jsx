@@ -16,13 +16,12 @@ import {
   ChevronDown,
   Settings,
   HelpCircle,
-  Shield,
   Sun,
   Moon,
   Bell,
   UserCircle
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
