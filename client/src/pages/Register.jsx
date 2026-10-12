@@ -10,8 +10,8 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    department: '',
-    year: '',
+    faculty: '',
+    semester: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -42,18 +42,24 @@ const Register = () => {
       return;
     }
 
+    // Validate college email
+    if (!formData.email.toLowerCase().endsWith('.edu.np')) {
+      setError('Please use your college email (.edu.np)');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await register(
-        formData.name,
-        formData.email,
-        formData.password,
-        {
-          department: formData.department,
-          year: formData.year,
-        }
-      );
+      // ✅ Send ONE object that matches backend expectations
+      await register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        faculty: formData.faculty,
+        studentStatus: 'current',
+        semester: parseInt(formData.semester),
+      });
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed. Please try again.');
@@ -93,6 +99,7 @@ const Register = () => {
                 <input
                   type="text"
                   name="name"
+                  id="name"
                   value={formData.name}
                   onChange={handleChange}
                   required
@@ -104,12 +111,13 @@ const Register = () => {
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">College Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="email"
                   name="email"
+                  id="email"
                   value={formData.email}
                   onChange={handleChange}
                   required
@@ -127,6 +135,7 @@ const Register = () => {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
+                  id="password"
                   value={formData.password}
                   onChange={handleChange}
                   required
@@ -151,6 +160,7 @@ const Register = () => {
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   name="confirmPassword"
+                  id="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required
@@ -167,45 +177,50 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Department */}
+            {/* Faculty */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Department</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Faculty</label>
               <div className="relative">
                 <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <select
-                  name="department"
-                  value={formData.department}
+                  name="faculty"
+                  id="faculty"
+                  value={formData.faculty}
                   onChange={handleChange}
                   required
                   className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition appearance-none"
                 >
-                  <option value="">Select your department</option>
-                  <option value="computer">💻 Computer Science</option>
-                  <option value="civil">🏗️ Civil Engineering</option>
-                  <option value="architecture">🏛️ Architecture</option>
-                  <option value="common">📚 Common</option>
+                  <option value="">Select your faculty</option>
+                  <option value="BE Computer">💻 BE Computer</option>
+                  <option value="Civil">🏗️ Civil</option>
+                  <option value="Architecture">🏛️ Architecture</option>
+                  <option value="BIT">📚 BIT</option>
                 </select>
               </div>
             </div>
 
-            {/* Year */}
+            {/* Semester */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Year of Study</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Semester</label>
               <div className="relative">
                 <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <select
-                  name="year"
-                  value={formData.year}
+                  name="semester"
+                  id="semester"
+                  value={formData.semester}
                   onChange={handleChange}
                   required
                   className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition appearance-none"
                 >
-                  <option value="">Select your year</option>
-                  <option value="1">1st Year</option>
-                  <option value="2">2nd Year</option>
-                  <option value="3">3rd Year</option>
-                  <option value="4">4th Year</option>
-                  <option value="5">5th Year</option>
+                  <option value="">Select your semester</option>
+                  <option value="1">1st Semester</option>
+                  <option value="2">2nd Semester</option>
+                  <option value="3">3rd Semester</option>
+                  <option value="4">4th Semester</option>
+                  <option value="5">5th Semester</option>
+                  <option value="6">6th Semester</option>
+                  <option value="7">7th Semester</option>
+                  <option value="8">8th Semester</option>
                 </select>
               </div>
             </div>
