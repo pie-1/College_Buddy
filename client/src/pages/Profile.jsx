@@ -1,6 +1,6 @@
-import { useAuth } from '../hooks/useAuth';
 import { Link } from 'react-router-dom';
-import { User, Mail, GraduationCap, Building, BookOpen, ArrowLeft } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { User, Mail, GraduationCap, Building, ArrowLeft } from 'lucide-react';
 
 function Profile() {
   const { user } = useAuth();
