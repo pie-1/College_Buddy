@@ -7,7 +7,6 @@ import crypto from 'crypto';
 /**
  * Auth Controller
  * @todo Add rate limiting
- * @todo Add request validation
  * @todo Add refresh token rotation
  */
 
@@ -29,6 +28,10 @@ export const register = async (req, res) => {
     // Generate verification token
     const verificationToken = crypto.randomBytes(32).toString('hex');
 
+    // ✅ Auto-verify in development
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const isVerified = isDevelopment ? true : false;
+
     // Create user
     const user = await User.create({
       name,
@@ -39,20 +42,31 @@ export const register = async (req, res) => {
       studentStatus,
       semester,
       graduationYear,
-      verificationToken,
+      verificationToken: isDevelopment ? null : verificationToken,
+      isVerified,
     });
 
-    // Send verification email
-    await sendVerificationEmail(user.email, verificationToken);
+    // Only send email in production
+    if (!isDevelopment) {
+      try {
+        await sendVerificationEmail(user.email, verificationToken);
+      } catch (emailError) {
+        console.error('Email send failed:', emailError.message);
+        // Don't fail registration if email fails
+      }
+    }
 
     res.status(201).json({
       success: true,
-      message: 'User registered. Please verify your email.',
+      message: isDevelopment
+        ? 'User registered (auto-verified in development)'
+        : 'User registered. Please verify your email.',
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         faculty: user.faculty,
+        isVerified: user.isVerified,
       },
     });
   } catch (error) {
@@ -71,7 +85,8 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    if (!user.isVerified) {
+    // ✅ Check verification (skip in development)
+    if (!user.isVerified && process.env.NODE_ENV !== 'development') {
       return res.status(401).json({ error: 'Please verify your email first' });
     }
 
