@@ -1,38 +1,73 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    name: { type: String, required: true, trim: true },
+    email: { 
+      type: String, 
+      required: true, 
+      unique: true, 
+      lowercase: true,
+      index: true // ✅ Email unique + indexed
+    },
     password: { type: String, required: true },
-    googleId: { type: String },
+    
+    // ✅ Enums for Dept, Year, Role
+    dept: {
+      type: String,
+      enum: ['CIVIL', 'ARCHI', 'BIT', 'COMPUTER'],
+      required: true,
+    },
+    year: {
+      type: Number,
+      enum: [1, 2, 3, 4],
+      required: true,
+    },
+    hostel: { type: String },
+    avatar: { type: String },
+    role: {
+      type: String,
+      enum: ['student', 'admin'],
+      default: 'student',
+    },
+    
+    // ✅ Trust Score defaults to 10
+    trustScore: { type: Number, default: 10 },
+
+    // Keeping other useful fields from your old model
     phone_num: { type: String },
-    address: { type: String },
-    faculty: {
-      type: String,
-      enum: ['BE Computer', 'Architecture', 'Civil', 'BIT'],
-    },
-    studentStatus: {
-      type: String,
-      enum: ['current', 'passed_out'],
-    },
-    semester: { type: Number },
-    graduationYear: { type: Number },
-    profileImage: { type: String },
     isVerified: { type: Boolean, default: false },
-    verificationToken: { type: String },
     refreshToken: { type: String },
-    reputation: { type: Number, default: 0 },
-    totalBorrows: { type: Number, default: 0 },
-    totalLends: { type: Number, default: 0 },
-    skills: [{ type: String }],
-    interests: [{ type: String }],
-    bio: { type: String },
-    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
-// ✅ FIXED: Added export default
+// ✅ Password hashed with bcrypt (12 rounds)
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  
+  try {
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ✅ toJSON() strips password + __v
+userSchema.methods.toJSON = function () {
+  const user = this.toObject();
+  delete user.password;
+  delete user.__v;
+  return user;
+};
+
+// Method to check password during login
+userSchema.methods.comparePassword = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
 const User = mongoose.model('User', userSchema);
 export default User;
