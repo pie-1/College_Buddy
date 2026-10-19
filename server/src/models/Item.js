@@ -37,8 +37,19 @@ const itemSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Text index for search
 itemSchema.index({ title: 'text', description: 'text', tags: 'text' });
 
+// ✅ ADD THIS: Virtual field for borrow requests
+itemSchema.virtual('borrowRequests', {
+  ref: 'BorrowRequest',
+  localField: '_id',
+  foreignField: 'item',
+});
+
+// ✅ ADD THIS: Enable virtuals in JSON and Object outputs
+itemSchema.set('toJSON', { virtuals: true });
+itemSchema.set('toObject', { virtuals: true });
 
 const Item = mongoose.model('Item', itemSchema);
 export default Item;
