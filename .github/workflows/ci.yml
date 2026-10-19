@@ -2,30 +2,30 @@ name: CI
 
 on:
   push:
-    branches: [ main, backend/auth-setup ]
+    branches: [ "main", "dev" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main", "dev" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Use Node.js 18
-      uses: actions/setup-node@v3
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js 20
+      uses: actions/setup-node@v4
       with:
-        node-version: 18.x
-    
-    - name: Install Dependencies
-      run: |
-        cd server
-        npm install
-        cd ../client
-        npm install
-    
-    - name: Build Frontend
-      run: |
-        cd client
-        npm run build
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: |
+          server/package-lock.json
+          client/package-lock.json
+
+    - name: Install Server Deps
+      run: cd server && npm ci
+
+    - name: Install Client Deps
+      run: cd client && npm ci
+
+    - name: Build Client
+      run: cd client && npm run build
