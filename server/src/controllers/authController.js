@@ -13,13 +13,13 @@ const toPublicUser = (user) => ({
   name: user.name,
   email: user.email,
   dept: user.dept,
-  year: user.year,
+  semester: user.semester,
 });
 
 // POST /api/auth/signup
 export const signup = async (req, res, next) => {
   try {
-    const { name, email, password, dept, year } = req.body;
+    const { name, email, password, dept, semester } = req.body;
 
     const existing = await User.findOne({ email });
     if (existing) {
@@ -27,7 +27,7 @@ export const signup = async (req, res, next) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    const user = await User.create({ name, email, password: passwordHash, dept, year });
+    const user = await User.create({ name, email, password: passwordHash, dept, semester });
 
     const { accessToken, refreshToken } = generateTokens(user);
     user.refreshToken = hashToken(refreshToken);

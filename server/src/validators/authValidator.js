@@ -21,7 +21,7 @@ export const signupSchema = z.object({
     ),
   password: z.string().min(8, 'Password must be at least 8 characters').max(72),
   dept: z.enum(DEPARTMENTS, { message: 'Invalid department' }),
-  year: z.coerce.number().int().min(1).max(5),
+  semester: z.coerce.number().int().min(1).max(8),
 });
 
 export const loginSchema = z.object({
