@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, backend/auth-setup ]
+    branches: [ main, feat/auth-middleware, feat/item-schema ]
   pull_request:
     branches: [ main ]
 
@@ -11,18 +11,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v4
     
-    - name: Use Node.js 18
-      uses: actions/setup-node@v3
+    - name: Use Node.js 20
+      uses: actions/setup-node@v4
       with:
-        node-version: 18.x
+        node-version: 20.x
     
-    - name: Install Dependencies
+    - name: Install Backend Dependencies
       run: |
         cd server
         npm install
-        cd ../client
+        
+    - name: Install Frontend Dependencies
+      run: |
+        cd client
         npm install
     
     - name: Build Frontend
