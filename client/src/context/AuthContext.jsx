@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-// Remove axios import if not using it
-// import axios from 'axios';
+import api, { setAccessToken } from '../api/client';
 
 const AuthContext = createContext();
 
@@ -8,70 +7,49 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check for existing session
+  // Hydrate session on app load
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    const hydrate = async () => {
       try {
-        setUser(JSON.parse(storedUser));
+        // 1. Try to get a new access token using the refresh cookie
+        const refreshRes = await api.post('/auth/refresh');
+        setAccessToken(refreshRes.data.accessToken);
+
+        // 2. Fetch user profile using the new access token
+        const meRes = await api.get('/auth/me');
+        setUser(meRes.data.user);
       } catch (error) {
-        localStorage.removeItem('user');
+        // No valid session (or cookie expired) -> stay logged out
+        setUser(null);
+        setAccessToken(null);
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+    hydrate();
   }, []);
 
-  // ✅ MOCK LOGIN - No backend needed
   const login = async (email, password) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Mock user for testing
-    const mockUser = {
-      id: 1,
-      name: 'Test User',
-      email: email,
-      department: 'computer',
-      year: '3',
-      profileImage: null,
-    };
-
-    // Store in localStorage
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    setUser(mockUser);
-
-    return { success: true };
+    const res = await api.post('/auth/login', { email, password });
+    setAccessToken(res.data.accessToken);
+    setUser(res.data.user);
   };
 
-  // ✅ MOCK REGISTER - No backend needed
-  const register = async (name, email, password, additionalData = {}) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const mockUser = {
-      id: Date.now(),
-      name: name,
-      email: email,
-      department: additionalData.department || 'common',
-      year: additionalData.year || '1',
-      profileImage: null,
-    };
-
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    setUser(mockUser);
-
-    return { success: true };
+  const register = async (userData) => {
+    const res = await api.post('/auth/signup', userData);
+    setAccessToken(res.data.accessToken);
+    setUser(res.data.user);
   };
 
-  const logout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-  };
-
-  const updateUser = (updatedData) => {
-    const updatedUser = { ...user, ...updatedData };
-    setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout failed', error);
+    } finally {
+      setAccessToken(null);
+      setUser(null);
+    }
   };
 
   const value = {
@@ -80,7 +58,6 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    updateUser,
     isAuthenticated: !!user,
   };
 
@@ -89,8 +66,6 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
