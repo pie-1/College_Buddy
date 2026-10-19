@@ -2,54 +2,59 @@ import mongoose from 'mongoose';
 
 const itemSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true, trim: true },
+    title: { 
+      type: String, 
+      required: true, 
+      trim: true 
+    },
+    description: { 
+      type: String, 
+      required: true 
+    },
     category: {
       type: String,
-      enum: ['books', 'tools', 'games', 'electronics', 'other'],
+      enum: ['BOOKS', 'TOOLS', 'NOTES', 'GAMES', 'ELECTRONICS', 'OTHER'],
       required: true,
     },
-    description: { type: String, required: true },
     condition: {
       type: String,
-      enum: ['New', 'Like New', 'Good', 'Fair', 'Poor'],
-      default: 'Good',
+      enum: ['NEW', 'GOOD', 'FAIR', 'WORN'],
+      required: true,
     },
-    tags: [{ type: String }],
-    image_urls: [{ type: String }],
-    number_of_items: { type: Number, default: 1 },
-    is_available: { type: Boolean, default: true },
-    owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    facultyRestriction: [{ type: String }],
-    borrowCount: { type: Number, default: 0 },
-    averageRating: { type: Number, default: 0 },
-    views: { type: Number, default: 0 },
-    max_borrow_duration: { type: Number, default: 14 },
-    bookDetails: {
-      isbn: { type: String },
-      author: { type: String },
-      edition: { type: String },
-      publisher: { type: String },
-      year: { type: Number },
-      subject: { type: String },
-      course: { type: String },
+    images: [{ 
+      type: String 
+    }],
+    tags: [{ 
+      type: String 
+    }],
+    owner: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'User', 
+      required: true 
+    },
+    status: {
+      type: String,
+      enum: ['available', 'borrowed', 'unavailable'],
+      default: 'available',
+    },
+    views: { 
+      type: Number, 
+      default: 0 
     },
   },
   { timestamps: true }
 );
 
-// Text index for search
-itemSchema.index({ title: 'text', description: 'text', tags: 'text' });
+// Validation to ensure max 3 images
+itemSchema.path('images').validate(function (value) {
+  return value.length <= 3;
+}, 'You can upload a maximum of 3 images.');
 
-// ✅ ADD THIS: Virtual field for borrow requests
-itemSchema.virtual('borrowRequests', {
-  ref: 'BorrowRequest',
-  localField: '_id',
-  foreignField: 'item',
-});
-
-// ✅ ADD THIS: Enable virtuals in JSON and Object outputs
-itemSchema.set('toJSON', { virtuals: true });
-itemSchema.set('toObject', { virtuals: true });
+// Indexes
+itemSchema.index({ title: 'text', tags: 'text' });
+itemSchema.index({ category: 1 });
+itemSchema.index({ owner: 1 });
+itemSchema.index({ status: 1 });
 
 const Item = mongoose.model('Item', itemSchema);
 export default Item;

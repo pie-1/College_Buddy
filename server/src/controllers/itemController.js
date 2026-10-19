@@ -9,27 +9,17 @@ import cloudinary from '../config/cloudinary.js';
 // Get all items with filters
 export const getItems = async (req, res) => {
   try {
-    const { category, search, faculty, available, page = 1, limit = 10 } = req.query;
+    const { category, search, status, page = 1, limit = 10 } = req.query;
     let filter = {};
 
-    // Category filter
     if (category) filter.category = category;
-    
-    // Faculty restriction filter
-    if (faculty) filter.facultyRestriction = { $in: [faculty] };
-    
-    // Availability filter
-    if (available === 'true') filter.is_available = true;
-
-    // Search filter
-    if (search) {
-      filter.$text = { $search: search };
-    }
+    if (status) filter.status = status;
+    if (search) filter.$text = { $search: search };
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const items = await Item.find(filter)
-      .populate('owner', 'name profileImage email faculty')
+      .populate('owner', 'name avatar email')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -56,17 +46,12 @@ export const getItems = async (req, res) => {
 export const getItem = async (req, res) => {
   try {
     const item = await Item.findById(req.params.id)
-      .populate('owner', 'name profileImage email phone_num faculty')
-      .populate({
-        path: 'borrowRequests',
-        select: 'status borrower expected_return_date',
-      });
+      .populate('owner', 'name avatar email phone_num');
 
     if (!item) {
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    // Increment views
     item.views += 1;
     await item.save();
 
@@ -77,99 +62,49 @@ export const getItem = async (req, res) => {
   }
 };
 
-// Create item (ADD ITEM FEATURE)
+// Create item (Protected + Zod validated + Rate limited)
 export const createItem = async (req, res) => {
   try {
-    const {
-      title,
-      category,
-      description,
-      condition,
-      tags,
-      number_of_items,
-      facultyRestriction,
-      max_borrow_duration,
-      bookDetails,
-    } = req.body;
+    const { title, description, category, condition, tags } = req.body;
 
-    // Validate required fields
-    if (!title || !category || !description) {
-      return res.status(400).json({
-        error: 'Missing required fields',
-        details: 'Title, category, and description are required',
-      });
-    }
+    // 1. RATE LIMIT: Max 5 items per user per day
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
 
-    // Validate category
-    const validCategories = ['books', 'tools', 'games', 'electronics', 'other'];
-    if (!validCategories.includes(category)) {
-      return res.status(400).json({
-        error: 'Invalid category',
-        details: `Category must be one of: ${validCategories.join(', ')}`,
-      });
-    }
-
-    // Validate condition
-    const validConditions = ['New', 'Like New', 'Good', 'Fair', 'Poor'];
-    if (condition && !validConditions.includes(condition)) {
-      return res.status(400).json({
-        error: 'Invalid condition',
-        details: `Condition must be one of: ${validConditions.join(', ')}`,
-      });
-    }
-
-    // Handle tags (convert string to array if needed)
-    let tagsArray = tags;
-    if (typeof tags === 'string') {
-      tagsArray = tags.split(',').map(tag => tag.trim());
-    }
-
-    // Handle faculty restriction
-    let facultyRestrictionArray = facultyRestriction;
-    if (typeof facultyRestriction === 'string') {
-      facultyRestrictionArray = facultyRestriction.split(',').map(f => f.trim());
-    }
-
-    // Handle book details
-    let parsedBookDetails = bookDetails;
-    if (typeof bookDetails === 'string') {
-      try {
-        parsedBookDetails = JSON.parse(bookDetails);
-      } catch (e) {
-        parsedBookDetails = null;
-      }
-    }
-
-    // Create item data
-    const itemData = {
-      title: title.trim(),
-      category,
-      description: description.trim(),
-      condition: condition || 'Good',
-      tags: tagsArray || [],
-      number_of_items: parseInt(number_of_items) || 1,
-      is_available: true,
+    const itemsCreatedToday = await Item.countDocuments({
       owner: req.userId,
-      facultyRestriction: facultyRestrictionArray || [],
-      max_borrow_duration: parseInt(max_borrow_duration) || 14,
-      bookDetails: parsedBookDetails || null,
+      createdAt: { $gte: startOfDay },
+    });
+
+    if (itemsCreatedToday >= 5) {
+      return res.status(429).json({
+        error: 'Rate limit exceeded',
+        details: 'You can only create a maximum of 5 items per day.',
+      });
+    }
+
+    // 2. Create item data
+    const itemData = {
+      title,
+      description,
+      category,
+      condition,
+      tags: tags || [],
+      owner: req.userId,
     };
 
-    // If images were uploaded via Cloudinary
+    // 3. Handle images
     if (req.files && req.files.length > 0) {
-      const imageUrls = req.files.map(file => file.path);
-      itemData.image_urls = imageUrls;
+      itemData.images = req.files.map((file) => file.path);
+    } else if (req.body.images) {
+      itemData.images = req.body.images;
     }
 
-    // If single image uploaded
-    if (req.file) {
-      itemData.image_urls = [req.file.path];
-    }
-
+    // 4. Save to database
     const item = await Item.create(itemData);
 
-    // Populate owner info
-    await item.populate('owner', 'name profileImage email');
+    // 5. Populate owner minimal data
+    await item.populate('owner', 'name avatar');
 
     res.status(201).json({
       success: true,
@@ -178,15 +113,6 @@ export const createItem = async (req, res) => {
     });
   } catch (error) {
     console.error('Create item error:', error);
-    
-    // Handle duplicate key error
-    if (error.code === 11000) {
-      return res.status(400).json({ 
-        error: 'Item already exists',
-        details: 'An item with this title already exists',
-      });
-    }
-
     res.status(500).json({ error: error.message });
   }
 };
@@ -200,53 +126,28 @@ export const updateItem = async (req, res) => {
       return res.status(404).json({ error: 'Item not found or unauthorized' });
     }
 
-    const {
-      title,
-      category,
-      description,
-      condition,
-      tags,
-      number_of_items,
-      is_available,
-      facultyRestriction,
-      max_borrow_duration,
-      bookDetails,
-    } = req.body;
+    const { title, description, category, condition, tags, status } = req.body;
 
-    // Build update object
     const updateData = {};
     if (title) updateData.title = title.trim();
-    if (category) updateData.category = category;
     if (description) updateData.description = description.trim();
+    if (category) updateData.category = category;
     if (condition) updateData.condition = condition;
+    if (status) updateData.status = status;
     if (tags) {
       updateData.tags = typeof tags === 'string' ? tags.split(',').map(t => t.trim()) : tags;
     }
-    if (number_of_items) updateData.number_of_items = parseInt(number_of_items);
-    if (is_available !== undefined) updateData.is_available = is_available === 'true';
-    if (facultyRestriction) {
-      updateData.facultyRestriction = typeof facultyRestriction === 'string' 
-        ? facultyRestriction.split(',').map(f => f.trim()) 
-        : facultyRestriction;
-    }
-    if (max_borrow_duration) updateData.max_borrow_duration = parseInt(max_borrow_duration);
-    if (bookDetails) {
-      updateData.bookDetails = typeof bookDetails === 'string' 
-        ? JSON.parse(bookDetails) 
-        : bookDetails;
-    }
 
-    // If new images uploaded
     if (req.files && req.files.length > 0) {
       const newImageUrls = req.files.map(file => file.path);
-      updateData.image_urls = [...(item.image_urls || []), ...newImageUrls];
+      updateData.images = [...(item.images || []), ...newImageUrls];
     }
 
     const updatedItem = await Item.findByIdAndUpdate(
       req.params.id,
       updateData,
       { new: true, runValidators: true }
-    ).populate('owner', 'name profileImage email');
+    ).populate('owner', 'name avatar email');
 
     res.json({
       success: true,
@@ -268,9 +169,8 @@ export const deleteItem = async (req, res) => {
       return res.status(404).json({ error: 'Item not found or unauthorized' });
     }
 
-    // Delete images from Cloudinary
-    if (item.image_urls && item.image_urls.length > 0) {
-      for (const imageUrl of item.image_urls) {
+    if (item.images && item.images.length > 0) {
+      for (const imageUrl of item.images) {
         try {
           const publicId = imageUrl.split('/').pop()?.split('.')[0];
           if (publicId) {
@@ -297,8 +197,7 @@ export const deleteItem = async (req, res) => {
 // Get my items
 export const getMyItems = async (req, res) => {
   try {
-    const items = await Item.find({ owner: req.userId })
-      .sort({ createdAt: -1 });
+    const items = await Item.find({ owner: req.userId }).sort({ createdAt: -1 });
     res.json(items);
   } catch (error) {
     console.error('Get my items error:', error);
@@ -310,8 +209,8 @@ export const getMyItems = async (req, res) => {
 export const getItemsByUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    const items = await Item.find({ owner: userId, is_available: true })
-      .populate('owner', 'name profileImage')
+    const items = await Item.find({ owner: userId, status: 'available' })
+      .populate('owner', 'name avatar')
       .sort({ createdAt: -1 });
     res.json(items);
   } catch (error) {
@@ -329,12 +228,12 @@ export const toggleAvailability = async (req, res) => {
       return res.status(404).json({ error: 'Item not found or unauthorized' });
     }
 
-    item.is_available = !item.is_available;
+    item.status = item.status === 'available' ? 'unavailable' : 'available';
     await item.save();
 
     res.json({
       success: true,
-      message: `Item is now ${item.is_available ? 'available' : 'unavailable'}`,
+      message: `Item is now ${item.status}`,
       item,
     });
   } catch (error) {
