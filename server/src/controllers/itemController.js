@@ -12,9 +12,16 @@ export const getItems = async (req, res) => {
     const { category, search, status, page = 1, limit = 10 } = req.query;
     let filter = {};
 
+    // Filter by strict category enum
     if (category) filter.category = category;
+    
+    // Filter by status (available, borrowed, unavailable)
     if (status) filter.status = status;
-    if (search) filter.$text = { $search: search };
+
+    // Search filter using text index
+    if (search) {
+      filter.$text = { $search: search };
+    }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -83,28 +90,45 @@ export const createItem = async (req, res) => {
       });
     }
 
-    // 2. Create item data
+    // 2. Validate required fields
+    if (!title || !description || !category || !condition) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        details: 'Title, description, category, and condition are required',
+      });
+    }
+
+    // 3. Handle tags
+    let tagsArray = tags;
+    if (typeof tags === 'string') {
+      tagsArray = tags.split(',').map(tag => tag.trim());
+    }
+
+    // 4. Create item data
     const itemData = {
-      title,
-      description,
+      title: title.trim(),
+      description: description.trim(),
       category,
       condition,
-      tags: tags || [],
+      tags: tagsArray || [],
       owner: req.userId,
     };
 
-    // 3. Handle images
+    // 5. Handle images (max 3)
     if (req.files && req.files.length > 0) {
+      if (req.files.length > 3) {
+        return res.status(400).json({ error: 'Maximum 3 images allowed' });
+      }
       itemData.images = req.files.map((file) => file.path);
     } else if (req.body.images) {
       itemData.images = req.body.images;
     }
 
-    // 4. Save to database
+    // 6. Save to database
     const item = await Item.create(itemData);
 
-    // 5. Populate owner minimal data
-    await item.populate('owner', 'name avatar');
+    // 7. Populate owner minimal data
+    await item.populate('owner', 'name avatar email');
 
     res.status(201).json({
       success: true,
@@ -128,6 +152,7 @@ export const updateItem = async (req, res) => {
 
     const { title, description, category, condition, tags, status } = req.body;
 
+    // Build update object
     const updateData = {};
     if (title) updateData.title = title.trim();
     if (description) updateData.description = description.trim();
@@ -139,6 +164,9 @@ export const updateItem = async (req, res) => {
     }
 
     if (req.files && req.files.length > 0) {
+      if (req.files.length > 3) {
+        return res.status(400).json({ error: 'Maximum 3 images allowed' });
+      }
       const newImageUrls = req.files.map(file => file.path);
       updateData.images = [...(item.images || []), ...newImageUrls];
     }
@@ -169,6 +197,7 @@ export const deleteItem = async (req, res) => {
       return res.status(404).json({ error: 'Item not found or unauthorized' });
     }
 
+    // Delete images from Cloudinary
     if (item.images && item.images.length > 0) {
       for (const imageUrl of item.images) {
         try {
@@ -219,7 +248,7 @@ export const getItemsByUser = async (req, res) => {
   }
 };
 
-// Toggle availability
+// Toggle availability (status change)
 export const toggleAvailability = async (req, res) => {
   try {
     const item = await Item.findOne({ _id: req.params.id, owner: req.userId });
@@ -228,6 +257,7 @@ export const toggleAvailability = async (req, res) => {
       return res.status(404).json({ error: 'Item not found or unauthorized' });
     }
 
+    // Toggle between 'available' and 'unavailable'
     item.status = item.status === 'available' ? 'unavailable' : 'available';
     await item.save();
 

@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ "main", "dev", "feat/create-item-endpoint", "feat/items-pagination", "feat/item-schema", "feat/auth-middleware" ]
+    branches: [ "main", "dev", "feat/auth-middleware", "feat/item-schema", "feat/create-item-endpoint", "feat/items-pagination" ]
   pull_request:
     branches: [ "main", "dev" ]
 
