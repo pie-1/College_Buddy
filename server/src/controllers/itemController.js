@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Item from '../models/Item.js';
 import cloudinary from '../config/cloudinary.js';
 
@@ -49,19 +50,25 @@ export const getItems = async (req, res) => {
   }
 };
 
-// Get single item
+// Get single item (Issue #34)
 export const getItem = async (req, res) => {
   try {
-    const item = await Item.findById(req.params.id)
-      .populate('owner', 'name avatar email phone_num');
-
-    if (!item) {
+    // 1. Validate ObjectId to prevent Mongoose crashes
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    // Increment views
-    item.views += 1;
-    await item.save();
+    // 2. Atomically increment views by 1 and return the updated document
+    const item = await Item.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { views: 1 } },
+      { new: true }
+    ).populate('owner', 'name avatar dept year trustScore'); // Populate specific fields
+
+    // 3. If item doesn't exist
+    if (!item) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
 
     res.json(item);
   } catch (error) {
