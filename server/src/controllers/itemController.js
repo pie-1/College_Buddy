@@ -6,42 +6,40 @@ import cloudinary from '../config/cloudinary.js';
  * Handles all item-related operations
  */
 
-// Get all items with filters
+// 1. Get all items with pagination (Issue #33)
 export const getItems = async (req, res) => {
   try {
-    const { category, search, status, page = 1, limit = 10 } = req.query;
-    let filter = {};
-
-    // Filter by strict category enum
-    if (category) filter.category = category;
+    // Default page=1, limit=12
+    const page = parseInt(req.query.page) || 1;
+    let limit = parseInt(req.query.limit) || 12;
     
-    // Filter by status (available, borrowed, unavailable)
-    if (status) filter.status = status;
+    // Cap the limit at 50
+    if (limit > 50) limit = 50;
+    if (limit < 1) limit = 1;
 
-    // Search filter using text index
-    if (search) {
-      filter.$text = { $search: search };
-    }
+    const skip = (page - 1) * limit;
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    // Only return status 'available' by default
+    const filter = { status: req.query.status || 'available' };
+    
+    if (req.query.category) filter.category = req.query.category;
+    if (req.query.search) filter.$text = { $search: req.query.search };
 
     const items = await Item.find(filter)
-      .populate('owner', 'name avatar email')
-      .sort({ createdAt: -1 })
+      .populate('owner', 'name avatar email trustScore dept') 
+      .sort({ createdAt: -1 }) // Newest first
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(limit);
 
     const total = await Item.countDocuments(filter);
+    const totalPages = Math.ceil(total / limit);
 
+    // Exact format requested
     res.json({
-      success: true,
-      items,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit),
-      },
+      data: items,
+      page,
+      totalPages,
+      total,
     });
   } catch (error) {
     console.error('Get items error:', error);
@@ -49,11 +47,11 @@ export const getItems = async (req, res) => {
   }
 };
 
-// Get single item
+// 2. Get single item
 export const getItem = async (req, res) => {
   try {
     const item = await Item.findById(req.params.id)
-      .populate('owner', 'name avatar email phone_num');
+      .populate('owner', 'name avatar email phone_num dept');
 
     if (!item) {
       return res.status(404).json({ error: 'Item not found' });
@@ -70,7 +68,7 @@ export const getItem = async (req, res) => {
   }
 };
 
-// Create item
+// 3. Create item
 export const createItem = async (req, res) => {
   try {
     const { title, description, category, condition, tags } = req.body;
@@ -110,7 +108,7 @@ export const createItem = async (req, res) => {
     const item = await Item.create(itemData);
 
     // Populate owner info
-    await item.populate('owner', 'name avatar email');
+    await item.populate('owner', 'name avatar email dept');
 
     res.status(201).json({
       success: true,
@@ -123,7 +121,7 @@ export const createItem = async (req, res) => {
   }
 };
 
-// Update item
+// 4. Update item
 export const updateItem = async (req, res) => {
   try {
     const item = await Item.findOne({ _id: req.params.id, owner: req.userId });
@@ -141,6 +139,7 @@ export const updateItem = async (req, res) => {
     if (category) updateData.category = category;
     if (condition) updateData.condition = condition;
     if (status) updateData.status = status;
+    
     if (tags) {
       updateData.tags = typeof tags === 'string' ? tags.split(',').map(t => t.trim()) : tags;
     }
@@ -158,7 +157,7 @@ export const updateItem = async (req, res) => {
       req.params.id,
       updateData,
       { new: true, runValidators: true }
-    ).populate('owner', 'name avatar email');
+    ).populate('owner', 'name avatar email dept');
 
     res.json({
       success: true,
@@ -171,7 +170,7 @@ export const updateItem = async (req, res) => {
   }
 };
 
-// Delete item
+// 5. Delete item
 export const deleteItem = async (req, res) => {
   try {
     const item = await Item.findOne({ _id: req.params.id, owner: req.userId });
@@ -206,7 +205,7 @@ export const deleteItem = async (req, res) => {
   }
 };
 
-// Get my items
+// 6. Get my items
 export const getMyItems = async (req, res) => {
   try {
     const items = await Item.find({ owner: req.userId })
@@ -218,7 +217,7 @@ export const getMyItems = async (req, res) => {
   }
 };
 
-// Get items by user
+// 7. Get items by user
 export const getItemsByUser = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -232,7 +231,7 @@ export const getItemsByUser = async (req, res) => {
   }
 };
 
-// Toggle availability (status change)
+// 8. Toggle availability (status change)
 export const toggleAvailability = async (req, res) => {
   try {
     const item = await Item.findOne({ _id: req.params.id, owner: req.userId });
