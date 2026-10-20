@@ -26,7 +26,7 @@ export const getItems = async (req, res) => {
     if (req.query.search) filter.$text = { $search: req.query.search };
 
     const items = await Item.find(filter)
-      .populate('owner', 'name avatar trustScore dept') // Populates owner specific fields
+      .populate('owner', 'name avatar email trustScore dept') 
       .sort({ createdAt: -1 }) // Newest first
       .skip(skip)
       .limit(limit);
@@ -73,7 +73,15 @@ export const createItem = async (req, res) => {
   try {
     const { title, description, category, condition, tags } = req.body;
 
-    // Handle tags
+    // Validate required fields
+    if (!title || !description || !category || !condition) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        details: 'Title, description, category, and condition are required',
+      });
+    }
+
+    // Handle tags (convert string to array if needed)
     let tagsArray = tags;
     if (typeof tags === 'string') {
       tagsArray = tags.split(',').map(tag => tag.trim());
@@ -89,17 +97,18 @@ export const createItem = async (req, res) => {
       owner: req.userId,
     };
 
-    // Handle images
+    // If images were uploaded via Cloudinary/Multer
     if (req.files && req.files.length > 0) {
+      if (req.files.length > 3) {
+        return res.status(400).json({ error: 'Maximum 3 images allowed' });
+      }
       itemData.images = req.files.map(file => file.path);
-    } else if (req.body.images) {
-      itemData.images = req.body.images;
     }
 
     const item = await Item.create(itemData);
 
     // Populate owner info
-    await item.populate('owner', 'name avatar dept');
+    await item.populate('owner', 'name avatar email dept');
 
     res.status(201).json({
       success: true,
@@ -123,6 +132,7 @@ export const updateItem = async (req, res) => {
 
     const { title, description, category, condition, tags, status } = req.body;
 
+    // Build update object
     const updateData = {};
     if (title) updateData.title = title.trim();
     if (description) updateData.description = description.trim();
@@ -136,6 +146,9 @@ export const updateItem = async (req, res) => {
 
     // If new images uploaded
     if (req.files && req.files.length > 0) {
+      if (req.files.length > 3) {
+        return res.status(400).json({ error: 'Maximum 3 images allowed' });
+      }
       const newImageUrls = req.files.map(file => file.path);
       updateData.images = [...(item.images || []), ...newImageUrls];
     }
@@ -144,7 +157,7 @@ export const updateItem = async (req, res) => {
       req.params.id,
       updateData,
       { new: true, runValidators: true }
-    ).populate('owner', 'name avatar dept');
+    ).populate('owner', 'name avatar email dept');
 
     res.json({
       success: true,
@@ -218,7 +231,7 @@ export const getItemsByUser = async (req, res) => {
   }
 };
 
-// 8. Toggle availability
+// 8. Toggle availability (status change)
 export const toggleAvailability = async (req, res) => {
   try {
     const item = await Item.findOne({ _id: req.params.id, owner: req.userId });
@@ -227,6 +240,7 @@ export const toggleAvailability = async (req, res) => {
       return res.status(404).json({ error: 'Item not found or unauthorized' });
     }
 
+    // Toggle between 'available' and 'unavailable'
     item.status = item.status === 'available' ? 'unavailable' : 'available';
     await item.save();
 
