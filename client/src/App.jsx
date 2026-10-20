@@ -10,6 +10,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Catalogue from './pages/Catalogue';
+import ConnectionsPage from './pages/ConnectionsPage'; // ← FIXED: Use the correct filename
 import Profile from './pages/Profile';
 import Inbox from './pages/Inbox';
 import Events from './pages/Events';
@@ -19,7 +20,7 @@ import AddItem from './pages/AddItem';
 function App() {
   return (
     <AuthProvider>
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-primary-900">
         <Navbar />
         <main className="flex-1 pt-16">
           <Routes>
@@ -28,6 +29,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/catalogue" element={<Catalogue />} />
+            <Route path="/connections" element={<ConnectionsPage />} /> {/* ← FIXED: Use ConnectionsPage component */}
             <Route path="/profile/:userId?" element={<Profile />} />
             <Route path="/inbox" element={<Inbox />} />
             <Route path="/events" element={<Events />} />
