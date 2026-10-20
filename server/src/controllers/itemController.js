@@ -57,7 +57,6 @@ export const getItem = async (req, res) => {
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    // Increment views
     item.views += 1;
     await item.save();
 
@@ -68,12 +67,28 @@ export const getItem = async (req, res) => {
   }
 };
 
-// 3. Create item
+// Create item (Protected + Zod validated + Rate limited)
 export const createItem = async (req, res) => {
   try {
     const { title, description, category, condition, tags } = req.body;
 
-    // Validate required fields
+    // 1. RATE LIMIT: Max 5 items per user per day
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const itemsCreatedToday = await Item.countDocuments({
+      owner: req.userId,
+      createdAt: { $gte: startOfDay },
+    });
+
+    if (itemsCreatedToday >= 5) {
+      return res.status(429).json({
+        error: 'Rate limit exceeded',
+        details: 'You can only create a maximum of 5 items per day.',
+      });
+    }
+
+    // 2. Validate required fields
     if (!title || !description || !category || !condition) {
       return res.status(400).json({
         error: 'Missing required fields',
@@ -81,13 +96,13 @@ export const createItem = async (req, res) => {
       });
     }
 
-    // Handle tags (convert string to array if needed)
+    // 3. Handle tags
     let tagsArray = tags;
     if (typeof tags === 'string') {
       tagsArray = tags.split(',').map(tag => tag.trim());
     }
 
-    // Create item data
+    // 4. Create item data
     const itemData = {
       title: title.trim(),
       description: description.trim(),
@@ -97,18 +112,21 @@ export const createItem = async (req, res) => {
       owner: req.userId,
     };
 
-    // If images were uploaded via Cloudinary/Multer
+    // 5. Handle images (max 3)
     if (req.files && req.files.length > 0) {
       if (req.files.length > 3) {
         return res.status(400).json({ error: 'Maximum 3 images allowed' });
       }
-      itemData.images = req.files.map(file => file.path);
+      itemData.images = req.files.map((file) => file.path);
+    } else if (req.body.images) {
+      itemData.images = req.body.images;
     }
 
+    // 6. Save to database
     const item = await Item.create(itemData);
 
-    // Populate owner info
-    await item.populate('owner', 'name avatar email dept');
+    // 7. Populate owner minimal data
+    await item.populate('owner', 'name avatar email');
 
     res.status(201).json({
       success: true,
@@ -144,7 +162,6 @@ export const updateItem = async (req, res) => {
       updateData.tags = typeof tags === 'string' ? tags.split(',').map(t => t.trim()) : tags;
     }
 
-    // If new images uploaded
     if (req.files && req.files.length > 0) {
       if (req.files.length > 3) {
         return res.status(400).json({ error: 'Maximum 3 images allowed' });
@@ -208,8 +225,7 @@ export const deleteItem = async (req, res) => {
 // 6. Get my items
 export const getMyItems = async (req, res) => {
   try {
-    const items = await Item.find({ owner: req.userId })
-      .sort({ createdAt: -1 });
+    const items = await Item.find({ owner: req.userId }).sort({ createdAt: -1 });
     res.json(items);
   } catch (error) {
     console.error('Get my items error:', error);
