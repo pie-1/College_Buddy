@@ -21,6 +21,7 @@ export const requireAuth = async (req, res, next) => {
     }
 
     req.user = user;
+    req.userId = user._id; // ✅ Added this line
     next();
   } catch (error) {
     return res.status(401).json({ error: 'Not authorized, token failed or expired' });
