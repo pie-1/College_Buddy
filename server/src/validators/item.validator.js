@@ -15,13 +15,31 @@ export const createItemSchema = z.object({
   condition: z.enum(['NEW', 'GOOD', 'FAIR', 'WORN'], {
     errorMap: () => ({ message: 'Invalid condition' }),
   }),
+  listingType: z.enum(['borrow', 'sell', 'buy'], {
+    errorMap: () => ({ message: 'Listing type must be borrow, sell, or buy' }),
+  }).optional(),
+  price: z.coerce.number().min(0, 'Price cannot be negative').optional(),
   images: z.array(z.string()).max(3, 'Maximum 3 images allowed').optional(),
   tags: z.array(z.string()).optional(),
+}).refine((data) => {
+  if ((data.listingType === 'sell' || data.listingType === 'buy') && !data.price) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Price is required for Sell or Buy listings",
+  path: ["price"],
 });
 
 export const validateCreateItem = (req, res, next) => {
+  // Pre-process tags
   if (typeof req.body.tags === 'string') {
     req.body.tags = req.body.tags.split(',').map((tag) => tag.trim());
+  }
+
+  // Convert price to number if it comes as a string from FormData
+  if (req.body.price) {
+    req.body.price = Number(req.body.price);
   }
 
   const result = createItemSchema.safeParse(req.body);

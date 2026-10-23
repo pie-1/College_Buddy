@@ -492,8 +492,6 @@ A task is complete only when all of the following are true:
 * Communicate before modifying another member's files.
 * Keep commits small and meaningful.
 * Review Pull Requests respectfully and provide constructive feedback.
-* Ask for help early if blocked.
 
----
 
-Following these responsibilities helps avoid merge conflicts, keeps the project organized, and ensures that every team member understands their role throughout the development process.
+
