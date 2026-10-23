@@ -33,6 +33,6 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// ✅ FIXED: Added export default
+
 const User = mongoose.model('User', userSchema);
 export default User;
