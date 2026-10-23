@@ -1,6 +1,5 @@
 import express from 'express';
-import { protect } from '../middleware/auth.js';
-import { validateItem } from '../middleware/validation.js';
+import { requireAuth } from '../middleware/auth.middleware.js';
 import { uploadMultiple } from '../middleware/upload.js';
 import {
   getItems,
@@ -19,16 +18,16 @@ const router = express.Router();
 router.get('/', getItems);
 router.get('/:id', getItem);
 
-// Protected routes
-router.use(protect);
+// Protected routes (All routes below require authentication)
+router.use(requireAuth);
+
 router.get('/my/items', getMyItems);
 router.get('/user/:userId', getItemsByUser);
 
-// Create item with image upload (max 5 images)
-router.post('/', uploadMultiple, validateItem, createItem);
-
-// Update item with image upload
-router.put('/:id', uploadMultiple, updateItem);
+// Create item with image upload (max 3 images) and Zod validation
+router.post('/', uploadMultiple, createItem);
+// Update item (PATCH method as requested)
+router.patch('/:id', uploadMultiple, updateItem);
 
 // Toggle availability
 router.patch('/:id/toggle', toggleAvailability);

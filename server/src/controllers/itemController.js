@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Item from '../models/Item.js';
 import cloudinary from '../config/cloudinary.js';
 
@@ -123,26 +124,30 @@ export const createItem = async (req, res) => {
   }
 };
 
-// Update item
+// Update item (Owner only) - Issue #35
 export const updateItem = async (req, res) => {
   try {
-    const item = await Item.findOne({ _id: req.params.id, owner: req.userId });
+    const item = await Item.findById(req.params.id);
 
     if (!item) {
-      return res.status(404).json({ error: 'Item not found or unauthorized' });
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // ✅ 403 if req.user._id !== item.owner
+    if (item.owner.toString() !== req.userId) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this item' });
     }
 
     const { title, description, category, condition, tags, status } = req.body;
 
-    // Build update object
-    const updateData = {};
-    if (title) updateData.title = title.trim();
-    if (description) updateData.description = description.trim();
-    if (category) updateData.category = category;
-    if (condition) updateData.condition = condition;
-    if (status) updateData.status = status;
+    // Update only allowed fields
+    if (title) item.title = title.trim();
+    if (description) item.description = description.trim();
+    if (category) item.category = category;
+    if (condition) item.condition = condition;
+    if (status) item.status = status;
     if (tags) {
-      updateData.tags = typeof tags === 'string' ? tags.split(',').map(t => t.trim()) : tags;
+      item.tags = typeof tags === 'string' ? tags.split(',').map(t => t.trim()) : tags;
     }
 
     // If new images uploaded
@@ -151,14 +156,11 @@ export const updateItem = async (req, res) => {
         return res.status(400).json({ error: 'Maximum 3 images allowed' });
       }
       const newImageUrls = req.files.map(file => file.path);
-      updateData.images = [...(item.images || []), ...newImageUrls];
+      item.images = [...(item.images || []), ...newImageUrls];
     }
 
-    const updatedItem = await Item.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true, runValidators: true }
-    ).populate('owner', 'name avatar email');
+    const updatedItem = await item.save();
+    await updatedItem.populate('owner', 'name avatar email');
 
     res.json({
       success: true,
@@ -171,13 +173,18 @@ export const updateItem = async (req, res) => {
   }
 };
 
-// Delete item
+// Delete item (Owner only) - Issue #35
 export const deleteItem = async (req, res) => {
   try {
-    const item = await Item.findOne({ _id: req.params.id, owner: req.userId });
+    const item = await Item.findById(req.params.id);
 
     if (!item) {
-      return res.status(404).json({ error: 'Item not found or unauthorized' });
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // ✅ 403 if req.user._id !== item.owner
+    if (item.owner.toString() !== req.userId) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this item' });
     }
 
     // Delete images from Cloudinary
@@ -194,6 +201,7 @@ export const deleteItem = async (req, res) => {
       }
     }
 
+    // ✅ Hard delete for MVP
     await Item.findByIdAndDelete(req.params.id);
 
     res.json({
@@ -235,10 +243,15 @@ export const getItemsByUser = async (req, res) => {
 // Toggle availability (status change)
 export const toggleAvailability = async (req, res) => {
   try {
-    const item = await Item.findOne({ _id: req.params.id, owner: req.userId });
+    const item = await Item.findById(req.params.id);
 
     if (!item) {
-      return res.status(404).json({ error: 'Item not found or unauthorized' });
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // ✅ Check if the logged-in user is the owner
+    if (item.owner.toString() !== req.userId) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this item' });
     }
 
     // Toggle between 'available' and 'unavailable'
