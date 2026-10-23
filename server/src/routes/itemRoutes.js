@@ -1,6 +1,6 @@
 import express from 'express';
-import { protect } from '../middleware/auth.js';
-import { validateItem } from '../middleware/validation.js';
+import { requireAuth } from '../middleware/auth.middleware.js'; // ✅ Fix: Use requireAuth
+import { validateCreateItem } from '../validators/item.validator.js'; 
 import { uploadMultiple } from '../middleware/upload.js';
 import {
   getItems,
@@ -20,15 +20,16 @@ router.get('/', getItems);
 router.get('/:id', getItem);
 
 // Protected routes
-router.use(protect);
+router.use(requireAuth); // ✅ Fix: Sets req.userId
+
 router.get('/my/items', getMyItems);
 router.get('/user/:userId', getItemsByUser);
 
-// Create item with image upload (max 5 images)
-router.post('/', uploadMultiple, validateItem, createItem);
+// Create item
+router.post('/', uploadMultiple, validateCreateItem, createItem);
 
-// Update item with image upload
-router.put('/:id', uploadMultiple, updateItem);
+// Update item
+router.patch('/:id', uploadMultiple, updateItem);
 
 // Toggle availability
 router.patch('/:id/toggle', toggleAvailability);
