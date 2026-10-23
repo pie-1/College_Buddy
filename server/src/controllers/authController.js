@@ -1,78 +1,57 @@
-import User from '../models/User.js';
-import { generateTokens, verifyToken } from '../services/tokenService.js';
-import { sendVerificationEmail, sendResetPasswordEmail } from '../services/emailService.js';
 import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
+import User from '../models/User.js';
+import {
+  generateTokens,
+  verifyToken,
+  hashToken,
+  setRefreshCookie,
+  clearRefreshCookie,
+} from '../services/tokenService.js';
 
-/**
- * Auth Controller
- * @todo Add rate limiting
- * @todo Add request validation
- * @todo Add refresh token rotation
- */
+const toPublicUser = (user) => ({
+  id: user._id,
+  name: user.name,
+  email: user.email,
+  dept: user.dept,
+  semester: user.semester,
+});
 
-// Register new user
-export const register = async (req, res) => {
+// POST /api/auth/signup
+export const signup = async (req, res, next) => {
   try {
-    const { name, email, password, phone_num, faculty, studentStatus, semester, graduationYear } = req.body;
+    const { name, email, password, dept, semester } = req.body;
 
-    // Check if user exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(409).json({ error: 'An account with this email already exists' });
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const passwordHash = await bcrypt.hash(password, 12);
+    const user = await User.create({ name, email, password: passwordHash, dept, semester });
 
-    // Generate verification token
-    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const { accessToken, refreshToken } = generateTokens(user);
+    user.refreshToken = hashToken(refreshToken);
+    await user.save();
 
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      phone_num,
-      faculty,
-      studentStatus,
-      semester,
-      graduationYear,
-      verificationToken,
-    });
-
-    // Send verification email
-    await sendVerificationEmail(user.email, verificationToken);
-
-    res.status(201).json({
-      success: true,
-      message: 'User registered. Please verify your email.',
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        faculty: user.faculty,
-      },
-    });
-  } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({ error: error.message });
+    setRefreshCookie(res, refreshToken);
+    return res.status(201).json({ user: toPublicUser(user), accessToken });
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(409).json({ error: 'An account with this email already exists' });
+    }
+    next(err);
   }
 };
 
-// Login user
-export const login = async (req, res) => {
+// POST /api/auth/login
+export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
+    // Generic message on BOTH branches -> no user enumeration.
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    if (!user.isVerified) {
-      return res.status(401).json({ error: 'Please verify your email first' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -81,108 +60,71 @@ export const login = async (req, res) => {
     }
 
     const { accessToken, refreshToken } = generateTokens(user);
-
-    user.refreshToken = refreshToken;
+    user.refreshToken = hashToken(refreshToken);
     await user.save();
 
-    res.json({
-      success: true,
-      accessToken,
-      refreshToken,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        faculty: user.faculty,
-        profileImage: user.profileImage,
-        reputation: user.reputation,
-        isVerified: user.isVerified,
-      },
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: error.message });
+    setRefreshCookie(res, refreshToken);
+    return res.status(200).json({ user: toPublicUser(user), accessToken });
+  } catch (err) {
+    next(err);
   }
 };
 
-// Verify email
-export const verifyEmail = async (req, res) => {
+// POST /api/auth/refresh
+export const refresh = async (req, res, next) => {
   try {
-    const { token } = req.params;
-    const user = await User.findOne({ verificationToken: token });
-
-    if (!user) {
-      return res.status(400).json({ error: 'Invalid verification token' });
+    const token = req.cookies?.refreshToken;
+    if (!token) {
+      return res.status(401).json({ error: 'No refresh token' });
     }
 
-    user.isVerified = true;
-    user.verificationToken = null;
-    await user.save();
-
-    res.json({ success: true, message: 'Email verified successfully' });
-  } catch (error) {
-    console.error('Verify email error:', error);
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// Refresh token
-export const refreshToken = async (req, res) => {
-  try {
-    const { refreshToken } = req.body;
-
-    if (!refreshToken) {
-      return res.status(401).json({ error: 'Refresh token required' });
-    }
-
-    const decoded = verifyToken(refreshToken, 'refresh');
-    const user = await User.findById(decoded.id);
-
-    if (!user || user.refreshToken !== refreshToken) {
+    let decoded;
+    try {
+      decoded = verifyToken(token, 'refresh');
+    } catch {
       return res.status(401).json({ error: 'Invalid refresh token' });
     }
 
-    const { accessToken, refreshToken: newRefreshToken } = generateTokens(user);
+    const user = await User.findById(decoded.id);
+    if (!user || !user.refreshToken) {
+      return res.status(401).json({ error: 'Invalid refresh token' });
+    }
 
-    user.refreshToken = newRefreshToken;
+    // Rotation: the stored hash must match the incoming token's hash.
+    // If it doesn't, this token was already used (or is stale) -> reject.
+    const incomingHash = hashToken(token);
+    if (incomingHash !== user.refreshToken) {
+      return res.status(401).json({ error: 'Invalid refresh token' });
+    }
+
+    const { accessToken, refreshToken } = generateTokens(user);
+    user.refreshToken = hashToken(refreshToken);
     await user.save();
 
-    res.json({
-      success: true,
-      accessToken,
-      refreshToken: newRefreshToken,
-    });
-  } catch (error) {
-    console.error('Refresh token error:', error);
-    res.status(401).json({ error: 'Invalid refresh token' });
+    setRefreshCookie(res, refreshToken);
+    return res.status(200).json({ accessToken });
+  } catch (err) {
+    next(err);
   }
 };
 
-// Logout
-export const logout = async (req, res) => {
+// POST /api/auth/logout
+export const logout = async (req, res, next) => {
   try {
-    const user = await User.findById(req.userId);
-    if (user) {
-      user.refreshToken = null;
-      await user.save();
-    }
-    res.json({ success: true, message: 'Logged out successfully' });
-  } catch (error) {
-    console.error('Logout error:', error);
-    res.status(500).json({ error: error.message });
-  }
-};
+    const token = req.cookies?.refreshToken;
 
-// Get current user
-export const getMe = async (req, res) => {
-  try {
-    const user = await User.findById(req.userId).select('-password -refreshToken -verificationToken');
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+    if (token) {
+      try {
+        const decoded = verifyToken(token, 'refresh');
+        await User.findByIdAndUpdate(decoded.id, { $set: { refreshToken: null } });
+      } catch {
+        // Token was already invalid/expired; clearing the cookie is enough.
+      }
     }
-    res.json(user);
-  } catch (error) {
-    console.error('Get me error:', error);
-    res.status(500).json({ error: error.message });
+
+    clearRefreshCookie(res);
+    return res.status(200).json({ message: 'Logged out' });
+  } catch (err) {
+    next(err);
   }
 };

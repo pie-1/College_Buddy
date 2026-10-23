@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    dept: { type: String },
     googleId: { type: String },
     phone_num: { type: String },
     address: { type: String },
@@ -33,6 +34,5 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// ✅ FIXED: Added export default
 const User = mongoose.model('User', userSchema);
 export default User;
