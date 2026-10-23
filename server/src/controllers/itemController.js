@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Item from '../models/Item.js';
 import cloudinary from '../config/cloudinary.js';
 
@@ -47,18 +48,25 @@ export const getItems = async (req, res) => {
   }
 };
 
-// 2. Get single item
+// 2. Get single item (Issue #34)
 export const getItem = async (req, res) => {
   try {
-    const item = await Item.findById(req.params.id)
-      .populate('owner', 'name avatar email phone_num dept');
-
-    if (!item) {
+    // Validate ObjectId to prevent Mongoose crashes
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    item.views += 1;
-    await item.save();
+    // Atomically increment views by 1 and return the updated document
+    const item = await Item.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { views: 1 } },
+      { new: true }
+    ).populate('owner', 'name avatar dept year trustScore'); // Populate specific fields
+
+    // If item doesn't exist
+    if (!item) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
 
     res.json(item);
   } catch (error) {
@@ -67,12 +75,12 @@ export const getItem = async (req, res) => {
   }
 };
 
-// Create item (Protected + Zod validated + Rate limited)
+// 3. Create item (Protected + Zod validated + Rate limited)
 export const createItem = async (req, res) => {
   try {
     const { title, description, category, condition, tags } = req.body;
 
-    // 1. RATE LIMIT: Max 5 items per user per day
+    // RATE LIMIT: Max 5 items per user per day
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
@@ -88,7 +96,7 @@ export const createItem = async (req, res) => {
       });
     }
 
-    // 2. Validate required fields
+    // Validate required fields
     if (!title || !description || !category || !condition) {
       return res.status(400).json({
         error: 'Missing required fields',
@@ -96,13 +104,13 @@ export const createItem = async (req, res) => {
       });
     }
 
-    // 3. Handle tags
+    // Handle tags
     let tagsArray = tags;
     if (typeof tags === 'string') {
       tagsArray = tags.split(',').map(tag => tag.trim());
     }
 
-    // 4. Create item data
+    // Create item data
     const itemData = {
       title: title.trim(),
       description: description.trim(),
@@ -112,7 +120,7 @@ export const createItem = async (req, res) => {
       owner: req.userId,
     };
 
-    // 5. Handle images (max 3)
+    // Handle images (max 3)
     if (req.files && req.files.length > 0) {
       if (req.files.length > 3) {
         return res.status(400).json({ error: 'Maximum 3 images allowed' });
@@ -122,10 +130,10 @@ export const createItem = async (req, res) => {
       itemData.images = req.body.images;
     }
 
-    // 6. Save to database
+    // Save to database
     const item = await Item.create(itemData);
 
-    // 7. Populate owner minimal data
+    // Populate owner minimal data
     await item.populate('owner', 'name avatar email');
 
     res.status(201).json({
