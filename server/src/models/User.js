@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    dept: { type: String },
     googleId: { type: String },
     phone_num: { type: String },
     address: { type: String },
@@ -18,6 +19,7 @@ const userSchema = new mongoose.Schema(
     },
     semester: { type: Number },
     graduationYear: { type: Number },
+    hostel: { type: String },
     profileImage: { type: String },
     isVerified: { type: Boolean, default: false },
     verificationToken: { type: String },
@@ -29,10 +31,11 @@ const userSchema = new mongoose.Schema(
     interests: [{ type: String }],
     bio: { type: String },
     isActive: { type: Boolean, default: true },
+    role: { type: String, enum: ['student', 'admin'], default: 'student' },
+    profileComplete: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
-
 
 const User = mongoose.model('User', userSchema);
 export default User;

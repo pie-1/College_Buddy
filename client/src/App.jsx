@@ -4,18 +4,23 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 
+// Guards
+import ProtectedRoute from './routes/ProtectedRoute';
+import AdminRoute from './routes/AdminRoute';
+
 // Pages
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Catalogue from './pages/Catalogue';
-import ConnectionsPage from './pages/ConnectionsPage'; // ← FIXED: Use the correct filename
+import ConnectionsPage from './pages/ConnectionsPage';
 import Profile from './pages/Profile';
 import Inbox from './pages/Inbox';
 import Events from './pages/Events';
 import Projects from './pages/Projects';
 import AddItem from './pages/AddItem';
+import Onboarding from './pages/Onboarding'; // Import the new onboarding page
 
 function App() {
   return (
@@ -24,17 +29,28 @@ function App() {
         <Navbar />
         <main className="flex-1 pt-16">
           <Routes>
+            {/* Public Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/catalogue" element={<Catalogue />} />
-            <Route path="/connections" element={<ConnectionsPage />} /> {/* ← FIXED: Use ConnectionsPage component */}
-            <Route path="/profile/:userId?" element={<Profile />} />
-            <Route path="/inbox" element={<Inbox />} />
-            <Route path="/events" element={<Events />} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/add-item" element={<AddItem />} />
+
+            {/* Protected Routes (Requires Login) */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/connections" element={<ConnectionsPage />} />
+              <Route path="/profile/:userId?" element={<Profile />} />
+              <Route path="/inbox" element={<Inbox />} />
+              <Route path="/events" element={<Events />} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/add-item" element={<AddItem />} />
+            </Route>
+
+            {/* Admin Routes */}
+            <Route element={<AdminRoute />}>
+              {/* Add admin-only routes here later */}
+            </Route>
           </Routes>
         </main>
         <Footer />

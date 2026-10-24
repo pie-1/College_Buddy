@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Mail, Lock, LogIn, AlertCircle, Eye, EyeOff, Building, GraduationCap } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
+import { User, Mail, Lock, LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -10,8 +10,6 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    department: '',
-    year: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,31 +28,26 @@ const Register = () => {
     e.preventDefault();
     setError('');
 
-    // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
-    // Validate password length
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
 
     setLoading(true);
 
     try {
-      await register(
-        formData.name,
-        formData.email,
-        formData.password,
-        {
-          department: formData.department,
-          year: formData.year,
-        }
-      );
-      navigate('/');
+      await register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+      });
+      
+      navigate('/onboarding');
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed. Please try again.');
     } finally {
@@ -85,7 +78,6 @@ const Register = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Full Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
               <div className="relative">
@@ -96,13 +88,12 @@ const Register = () => {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  placeholder="John Doe"
+                  placeholder="Raymon Aryal"
                   className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition"
                 />
               </div>
             </div>
 
-            {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
               <div className="relative">
@@ -119,7 +110,6 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Password */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
               <div className="relative">
@@ -130,7 +120,7 @@ const Register = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  placeholder="Min 6 characters"
+                  placeholder="Min 8 characters"
                   className="w-full pl-10 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition"
                 />
                 <button
@@ -143,7 +133,6 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Confirm Password */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm Password</label>
               <div className="relative">
@@ -167,49 +156,6 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Department */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Department</label>
-              <div className="relative">
-                <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <select
-                  name="department"
-                  value={formData.department}
-                  onChange={handleChange}
-                  required
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition appearance-none"
-                >
-                  <option value="">Select your department</option>
-                  <option value="computer">💻 Computer Science</option>
-                  <option value="civil">🏗️ Civil Engineering</option>
-                  <option value="architecture">🏛️ Architecture</option>
-                  <option value="common">📚 Common</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Year */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Year of Study</label>
-              <div className="relative">
-                <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <select
-                  name="year"
-                  value={formData.year}
-                  onChange={handleChange}
-                  required
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition appearance-none"
-                >
-                  <option value="">Select your year</option>
-                  <option value="1">1st Year</option>
-                  <option value="2">2nd Year</option>
-                  <option value="3">3rd Year</option>
-                  <option value="4">4th Year</option>
-                  <option value="5">5th Year</option>
-                </select>
-              </div>
-            </div>
-
             <button
               type="submit"
               disabled={loading}
@@ -219,17 +165,6 @@ const Register = () => {
               {loading ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
-
-          <p className="mt-4 text-center text-xs text-gray-500">
-            By creating an account, you agree to our{' '}
-            <Link to="/terms" className="text-primary-600 hover:underline">
-              Terms of Service
-            </Link>
-            {' '}and{' '}
-            <Link to="/privacy" className="text-primary-600 hover:underline">
-              Privacy Policy
-            </Link>
-          </p>
 
           <p className="mt-6 text-center text-sm text-gray-600">
             Already have an account?{' '}

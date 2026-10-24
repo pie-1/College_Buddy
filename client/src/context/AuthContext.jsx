@@ -1,55 +1,71 @@
-import { createContext, useState, useEffect } from 'react';
-import api from '../api/client';
+import { createContext, useContext, useState, useEffect } from 'react';
+import api, { setAccessToken } from '../api/client';
 
-// 1. Create the Context
-export const AuthContext = createContext(null);
+const AuthContext = createContext();
 
-// 2. Create the Provider Component
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUser = async () => {
-    try {
-      const response = await api.get('/auth/me');
-      setUser(response.data);
-    } catch {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Hydrate session on app load
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      fetchUser();
-    } else {
-      setLoading(false);
-    }
+    const hydrate = async () => {
+      try {
+        // 1. Try to get a new access token using the refresh cookie
+        const refreshRes = await api.post('/auth/refresh');
+        setAccessToken(refreshRes.data.accessToken);
+
+        // 2. Fetch user profile using the new access token
+        const meRes = await api.get('/auth/me');
+        setUser(meRes.data.user);
+      } catch (error) {
+        // No valid session (or cookie expired) -> stay logged out
+        setUser(null);
+        setAccessToken(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    hydrate();
   }, []);
 
   const login = async (email, password) => {
-    const response = await api.post('/auth/login', { email, password });
-    localStorage.setItem('accessToken', response.data.accessToken);
-    localStorage.setItem('refreshToken', response.data.refreshToken);
-    setUser(response.data.user);
-    return response.data;
+    const res = await api.post('/auth/login', { email, password });
+    setAccessToken(res.data.accessToken);
+    setUser(res.data.user);
   };
 
   const register = async (userData) => {
-    const response = await api.post('/auth/register', userData); 
-    return response.data;
+    const res = await api.post('/auth/signup', userData);
+    setAccessToken(res.data.accessToken);
+    setUser(res.data.user);
   };
 
-  const logout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    setUser(null);
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout failed', error);
+    } finally {
+      setAccessToken(null);
+      setUser(null);
+    }
   };
 
-  const value = { user, loading, login, register, logout, fetchUser };
+  const value = {
+    user,
+    loading,
+    login,
+    register,
+    logout,
+    isAuthenticated: !!user,
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  return context;
 };
