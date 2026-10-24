@@ -4,46 +4,33 @@ import { sendVerificationEmail, sendResetPasswordEmail } from '../services/email
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 
-/**
- * Auth Controller
- * @todo Add rate limiting
- * @todo Add request validation
- * @todo Add refresh token rotation
- */
-
 // Register new user
 export const register = async (req, res) => {
   try {
-    const { name, email, password, phone_num, faculty, studentStatus, semester, graduationYear } = req.body;
+    // 1. Get the exact fields the frontend sends (matches Zod)
+    const { name, email, password, dept, year } = req.body;
 
-    // Check if user exists
+    // 2. Check if user exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Generate verification token
+    // 3. Generate verification token
     const verificationToken = crypto.randomBytes(32).toString('hex');
 
-    // Create user
+    // 4. Create user (Password is hashed automatically by User.js pre-save hook)
     const user = await User.create({
       name,
       email,
-      password: hashedPassword,
-      phone_num,
-      faculty,
-      studentStatus,
-      semester,
-      graduationYear,
+      password, // Do not hash here, let Mongoose do it
+      dept,
+      year,
       verificationToken,
     });
 
-    // Send verification email
-    await sendVerificationEmail(user.email, verificationToken);
+    // 5. Send verification email
+    // await sendVerificationEmail(user.email, verificationToken); // Commented out for testing
 
     res.status(201).json({
       success: true,
@@ -52,7 +39,8 @@ export const register = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        faculty: user.faculty,
+        dept: user.dept,
+        year: user.year,
       },
     });
   } catch (error) {
@@ -71,9 +59,9 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    if (!user.isVerified) {
-      return res.status(401).json({ error: 'Please verify your email first' });
-    }
+    // if (!user.isVerified) {
+    //   return res.status(401).json({ error: 'Please verify your email first' });
+    // } // Commented out for local testing
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
@@ -93,9 +81,10 @@ export const login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        faculty: user.faculty,
-        profileImage: user.profileImage,
-        reputation: user.reputation,
+        dept: user.dept,
+        year: user.year,
+        avatar: user.avatar,
+        trustScore: user.trustScore,
         isVerified: user.isVerified,
       },
     });

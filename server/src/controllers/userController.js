@@ -70,6 +70,18 @@ export const getUser = async (req, res) => {
   }
 };
 
+// @desc    Get all users looking for a roommate
+// @route   GET /api/users/roommates
+export const getRoommates = async (req, res) => {
+  try {
+    const roommates = await User.find({ lookingForRoommate: true, isActive: true })
+      .select('name dept year avatar bio roommateDetails');
+    res.json(roommates);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // Update specific user (Admin or legacy use)
 export const updateUser = async (req, res) => {
   try {

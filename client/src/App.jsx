@@ -16,6 +16,10 @@ import Inbox from './pages/Inbox';
 import Events from './pages/Events';
 import Projects from './pages/Projects';
 import AddItem from './pages/AddItem';
+import Chat from './pages/Chat.jsx';
+import Roommates from './pages/Roommates';
+
+
 
 function App() {
   return (
@@ -35,6 +39,9 @@ function App() {
             <Route path="/events" element={<Events />} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/add-item" element={<AddItem />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/roommates" element={<Roommates />} />
+
           </Routes>
         </main>
         <Footer />
