@@ -1,6 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext'; // This is the missing import!
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 
@@ -20,6 +20,7 @@ import Inbox from './pages/Inbox';
 import Events from './pages/Events';
 import Projects from './pages/Projects';
 import AddItem from './pages/AddItem';
+import Onboarding from './pages/Onboarding'; // Import the new onboarding page
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
 
             {/* Protected Routes (Requires Login) */}
             <Route element={<ProtectedRoute />}>
+              <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/connections" element={<ConnectionsPage />} />
               <Route path="/profile/:userId?" element={<Profile />} />
@@ -45,10 +47,9 @@ function App() {
               <Route path="/add-item" element={<AddItem />} />
             </Route>
 
-            {/* Admin Routes (Requires role="admin") */}
+            {/* Admin Routes */}
             <Route element={<AdminRoute />}>
-              {/* Add admin-only routes here later, e.g.: */}
-              {/* <Route path="/admin" element={<AdminDashboard />} /> */}
+              {/* Add admin-only routes here later */}
             </Route>
           </Routes>
         </main>
