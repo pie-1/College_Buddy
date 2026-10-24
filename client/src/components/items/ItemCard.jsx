@@ -8,6 +8,7 @@
 import { Link } from 'react-router-dom';
 import { Heart, MapPin, Clock, User } from 'lucide-react';
 
+// ✅ REMOVED 'category' from props
 const ItemCard = ({
   id,
   title,
@@ -18,7 +19,6 @@ const ItemCard = ({
   location,
   available = true,
   createdAt,
-  category,
   onLike,
   isLiked = false,
   className = '',

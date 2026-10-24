@@ -16,6 +16,7 @@ import borrowRoutes from './routes/borrowRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
 import projectRoutes from './routes/projectRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js'; // ✅ ADD THIS
 
 // ✅ Import validation (ADD THIS)
 import { validateRegister, validateLogin, validateItem, validateBorrow } from './middleware/validation.js';
@@ -64,6 +65,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/upload', uploadRoutes); // ✅ ADD THIS
 
 // health check route
 app.get('/api/health', (req, res) => {

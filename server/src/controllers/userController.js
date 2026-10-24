@@ -1,26 +1,11 @@
 import User from '../models/User.js';
 
-// Note: Cloudinary is temporarily disabled for testing the onboarding wizard.
-// When you have real API keys in your .env file, you can un-comment the cloudinary lines below.
+/**
+ * User Controller
+ * Handles user CRUD operations
+ */
 
-/*
-import cloudinary from '../config/cloudinary.js';
-import { Readable } from 'stream';
-
-const uploadToCloudinary = (buffer) => {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      { folder: 'college_buddy_avatars' },
-      (error, result) => {
-        if (error) reject(error);
-        else resolve(result);
-      }
-    );
-    Readable.from(buffer).pipe(stream);
-  });
-};
-*/
-
+// Get all users
 export const getUsers = async (req, res) => {
   try {
     const users = await User.find()
@@ -28,56 +13,41 @@ export const getUsers = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(users);
   } catch (error) {
+    console.error('Get users error:', error);
     res.status(500).json({ error: error.message });
   }
 };
 
+// Get single user
 export const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
       .select('-password -refreshToken -verificationToken');
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
     res.json(user);
   } catch (error) {
+    console.error('Get user error:', error);
     res.status(500).json({ error: error.message });
   }
 };
 
-export const updateMe = async (req, res) => {
-  try {
-    const { dept, semester, hostel, bio } = req.body;
-    const updateData = { dept, semester, hostel, bio, profileComplete: true };
-
-    // --- CLOUDINARY UPLOAD TEMPORARILY DISABLED ---
-    // if (req.file) {
-    //   const result = await uploadToCloudinary(req.file.buffer);
-    //   updateData.profileImage = result.secure_url;
-    // }
-    // ----------------------------------------------
-
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      updateData,
-      { new: true, runValidators: true }
-    ).select('-password -refreshToken -verificationToken');
-
-    res.json(user);
-  } catch (error) {
-    console.error('Update me error:', error);
-    res.status(500).json({ error: error.message });
-  }
-};
-
+// Update user
 export const updateUser = async (req, res) => {
   try {
-    const { name, phone_num, address, faculty, semester, graduationYear, skills, interests, bio, role } = req.body;
+    const { name, phone_num, address, faculty, semester, graduationYear, skills, interests, bio } = req.body;
+    
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      { name, phone_num, address, faculty, semester, graduationYear, skills, interests, bio, role },
+      { name, phone_num, address, faculty, semester, graduationYear, skills, interests, bio },
       { new: true, runValidators: true }
     ).select('-password -refreshToken -verificationToken');
 
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
     res.json(user);
   } catch (error) {
     res.status(500).json({ error: error.message });

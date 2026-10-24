@@ -41,7 +41,6 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Send ONE object matching the backend schema (no dept/semester yet!)
       await register({
         name: formData.name,
         email: formData.email,

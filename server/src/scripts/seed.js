@@ -63,13 +63,13 @@ const sampleItems = [
 const seedDatabase = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/collegebuddy');
-    console.log('🗑️ Cleaning database...');
+    console.log('Cleaning database...');
     
     await User.deleteMany({});
     await Item.deleteMany({});
     await Event.deleteMany({});
     
-    console.log('👤 Creating users...');
+    console.log('Creating users...');
     const users = [];
     for (const userData of sampleUsers) {
       const salt = await bcrypt.genSalt(10);
@@ -81,7 +81,7 @@ const seedDatabase = async () => {
       users.push(user);
     }
 
-    console.log('📚 Creating items...');
+    console.log('Creating items...');
     for (const itemData of sampleItems) {
       await Item.create({
         ...itemData,
@@ -89,10 +89,10 @@ const seedDatabase = async () => {
       });
     }
 
-    console.log('✅ Database seeded successfully!');
+    console.log('Database seeded successfully!');
     process.exit(0);
   } catch (error) {
-    console.error('❌ Seed error:', error);
+    console.error('Seed error:', error);
     process.exit(1);
   }
 };
