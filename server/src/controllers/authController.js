@@ -14,6 +14,9 @@ const toPublicUser = (user) => ({
   email: user.email,
   dept: user.dept,
   semester: user.semester,
+  role: user.role,
+  profileComplete: user.profileComplete,
+  profileImage: user.profileImage,
 });
 
 // POST /api/auth/signup
@@ -27,7 +30,7 @@ export const signup = async (req, res, next) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    const user = await User.create({ name, email, password: passwordHash, dept, semester });
+    const user = await User.create({ name, email, password: passwordHash, dept: dept || undefined, semester: semester || undefined });
 
     const { accessToken, refreshToken } = generateTokens(user);
     user.refreshToken = hashToken(refreshToken);
@@ -49,7 +52,6 @@ export const login = async (req, res, next) => {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
-    // Generic message on BOTH branches -> no user enumeration.
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -90,8 +92,6 @@ export const refresh = async (req, res, next) => {
       return res.status(401).json({ error: 'Invalid refresh token' });
     }
 
-    // Rotation: the stored hash must match the incoming token's hash.
-    // If it doesn't, this token was already used (or is stale) -> reject.
     const incomingHash = hashToken(token);
     if (incomingHash !== user.refreshToken) {
       return res.status(401).json({ error: 'Invalid refresh token' });
@@ -112,19 +112,20 @@ export const refresh = async (req, res, next) => {
 export const logout = async (req, res, next) => {
   try {
     const token = req.cookies?.refreshToken;
-
     if (token) {
       try {
         const decoded = verifyToken(token, 'refresh');
         await User.findByIdAndUpdate(decoded.id, { $set: { refreshToken: null } });
-      } catch {
-        // Token was already invalid/expired; clearing the cookie is enough.
-      }
+      } catch {}
     }
-
     clearRefreshCookie(res);
     return res.status(200).json({ message: 'Logged out' });
   } catch (err) {
     next(err);
   }
+};
+
+// GET /api/auth/me
+export const getMe = async (req, res) => {
+  return res.status(200).json({ user: toPublicUser(req.user) });
 };

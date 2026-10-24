@@ -20,8 +20,9 @@ export const signupSchema = z.object({
       'Please use your college email address'
     ),
   password: z.string().min(8, 'Password must be at least 8 characters').max(72),
-  dept: z.enum(DEPARTMENTS, { message: 'Invalid department' }),
-  semester: z.coerce.number().int().min(1).max(8),
+  // These are now optional during signup because the Onboarding Wizard will collect them.
+  dept: z.enum(DEPARTMENTS, { message: 'Invalid department' }).optional(),
+  semester: z.coerce.number().int().min(1).max(8).optional(),
 });
 
 export const loginSchema = z.object({
