@@ -19,8 +19,9 @@ import Profile from './pages/Profile';
 import Inbox from './pages/Inbox';
 import Events from './pages/Events';
 import Projects from './pages/Projects';
-import AddItem from './pages/AddItem';
-import Onboarding from './pages/Onboarding'; // Import the new onboarding page
+import Onboarding from './pages/Onboarding';
+import CreateItem from './pages/items/CreateItem'; // NEW
+import ItemDetail from './pages/items/ItemDetail'; // NEW
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/catalogue" element={<Catalogue />} />
+            <Route path="/items/:id" element={<ItemDetail />} /> {/* Public Item Detail */}
 
             {/* Protected Routes (Requires Login) */}
             <Route element={<ProtectedRoute />}>
@@ -44,7 +46,7 @@ function App() {
               <Route path="/inbox" element={<Inbox />} />
               <Route path="/events" element={<Events />} />
               <Route path="/projects" element={<Projects />} />
-              <Route path="/add-item" element={<AddItem />} />
+              <Route path="/items/new" element={<CreateItem />} /> {/* NEW: Create Item */}
             </Route>
 
             {/* Admin Routes */}

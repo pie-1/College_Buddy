@@ -122,7 +122,7 @@ const Dashboard = () => {
             </p>
           </div>
           <div className="flex gap-3">
-            <Link to="/add-item">
+            <Link to="/items/new">
               <Button variant="primary" size="sm">
                 <Plus size={18} /> Share an Item
               </Button>
