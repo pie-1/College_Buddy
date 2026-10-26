@@ -11,3 +11,8 @@ export const updateMyProfile = async (userData) => {
   const response = await api.patch('/users/me', userData);
   return response.data;
 };
+
+export const getRoommates = async () => {
+  const response = await api.get('/users/roommates');
+  return response.data;
+};
