@@ -7,42 +7,35 @@ import cloudinary from '../config/cloudinary.js';
  * Handles all item-related operations
  */
 
-// Get all items with filters
+// 1. Get all items with pagination (Issue #33)
 export const getItems = async (req, res) => {
   try {
-    const { category, search, status, page = 1, limit = 10 } = req.query;
-    let filter = {};
-
-    // Filter by strict category enum
-    if (category) filter.category = category;
+    const page = parseInt(req.query.page) || 1;
+    let limit = parseInt(req.query.limit) || 12;
     
-    // Filter by status (available, borrowed, unavailable)
-    if (status) filter.status = status;
+    if (limit > 50) limit = 50;
+    if (limit < 1) limit = 1;
 
-    // Search filter using text index
-    if (search) {
-      filter.$text = { $search: search };
-    }
-
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const skip = (page - 1) * limit;
+    const filter = { status: req.query.status || 'available' };
+    
+    if (req.query.category) filter.category = req.query.category;
+    if (req.query.search) filter.$text = { $search: req.query.search };
 
     const items = await Item.find(filter)
-      .populate('owner', 'name avatar email')
+      .populate('owner', 'name avatar email trustScore dept') 
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(limit);
 
     const total = await Item.countDocuments(filter);
+    const totalPages = Math.ceil(total / limit);
 
     res.json({
-      success: true,
-      items,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit),
-      },
+      data: items,
+      page,
+      totalPages,
+      total,
     });
   } catch (error) {
     console.error('Get items error:', error);
@@ -50,19 +43,22 @@ export const getItems = async (req, res) => {
   }
 };
 
-// Get single item
+// 2. Get single item (Issue #34)
 export const getItem = async (req, res) => {
   try {
-    const item = await Item.findById(req.params.id)
-      .populate('owner', 'name avatar email phone_num');
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    const item = await Item.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { views: 1 } },
+      { new: true }
+    ).populate('owner', 'name avatar dept year trustScore');
 
     if (!item) {
       return res.status(404).json({ error: 'Item not found' });
     }
-
-    // Increment views
-    item.views += 1;
-    await item.save();
 
     res.json(item);
   } catch (error) {
@@ -71,12 +67,26 @@ export const getItem = async (req, res) => {
   }
 };
 
-// Create item
+// 3. Create item (Protected + Zod validated + Rate limited)
 export const createItem = async (req, res) => {
   try {
     const { title, description, category, condition, tags } = req.body;
 
-    // Validate required fields
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const itemsCreatedToday = await Item.countDocuments({
+      owner: req.userId,
+      createdAt: { $gte: startOfDay },
+    });
+
+    if (itemsCreatedToday >= 5) {
+      return res.status(429).json({
+        error: 'Rate limit exceeded',
+        details: 'You can only create a maximum of 5 items per day.',
+      });
+    }
+
     if (!title || !description || !category || !condition) {
       return res.status(400).json({
         error: 'Missing required fields',
@@ -84,13 +94,11 @@ export const createItem = async (req, res) => {
       });
     }
 
-    // Handle tags (convert string to array if needed)
     let tagsArray = tags;
     if (typeof tags === 'string') {
       tagsArray = tags.split(',').map(tag => tag.trim());
     }
 
-    // Create item data
     const itemData = {
       title: title.trim(),
       description: description.trim(),
@@ -100,17 +108,17 @@ export const createItem = async (req, res) => {
       owner: req.userId,
     };
 
-    // If images were uploaded via Cloudinary/Multer
     if (req.files && req.files.length > 0) {
       if (req.files.length > 3) {
         return res.status(400).json({ error: 'Maximum 3 images allowed' });
       }
-      itemData.images = req.files.map(file => file.path);
+      itemData.images = req.files.map((file) => file.path);
+    } else if (req.body.images) {
+      itemData.images = req.body.images;
     }
 
     const item = await Item.create(itemData);
 
-    // Populate owner info
     await item.populate('owner', 'name avatar email');
 
     res.status(201).json({
@@ -124,7 +132,7 @@ export const createItem = async (req, res) => {
   }
 };
 
-// Update item (Owner only) - Issue #35
+// 4. Update item (Owner only)
 export const updateItem = async (req, res) => {
   try {
     const item = await Item.findById(req.params.id);
@@ -133,24 +141,22 @@ export const updateItem = async (req, res) => {
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    // ✅ 403 if req.user._id !== item.owner
     if (item.owner.toString() !== req.userId) {
       return res.status(403).json({ error: 'Forbidden: You do not own this item' });
     }
 
     const { title, description, category, condition, tags, status } = req.body;
 
-    // Update only allowed fields
     if (title) item.title = title.trim();
     if (description) item.description = description.trim();
     if (category) item.category = category;
     if (condition) item.condition = condition;
     if (status) item.status = status;
+    
     if (tags) {
       item.tags = typeof tags === 'string' ? tags.split(',').map(t => t.trim()) : tags;
     }
 
-    // If new images uploaded
     if (req.files && req.files.length > 0) {
       if (req.files.length > 3) {
         return res.status(400).json({ error: 'Maximum 3 images allowed' });
@@ -160,7 +166,7 @@ export const updateItem = async (req, res) => {
     }
 
     const updatedItem = await item.save();
-    await updatedItem.populate('owner', 'name avatar email');
+    await updatedItem.populate('owner', 'name avatar email dept');
 
     res.json({
       success: true,
@@ -173,7 +179,7 @@ export const updateItem = async (req, res) => {
   }
 };
 
-// Delete item (Owner only) - Issue #35
+// 5. Delete item (Owner only)
 export const deleteItem = async (req, res) => {
   try {
     const item = await Item.findById(req.params.id);
@@ -182,12 +188,10 @@ export const deleteItem = async (req, res) => {
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    // ✅ 403 if req.user._id !== item.owner
     if (item.owner.toString() !== req.userId) {
       return res.status(403).json({ error: 'Forbidden: You do not own this item' });
     }
 
-    // Delete images from Cloudinary
     if (item.images && item.images.length > 0) {
       for (const imageUrl of item.images) {
         try {
@@ -201,7 +205,6 @@ export const deleteItem = async (req, res) => {
       }
     }
 
-    // ✅ Hard delete for MVP
     await Item.findByIdAndDelete(req.params.id);
 
     res.json({
@@ -214,11 +217,10 @@ export const deleteItem = async (req, res) => {
   }
 };
 
-// Get my items
+// 6. Get my items
 export const getMyItems = async (req, res) => {
   try {
-    const items = await Item.find({ owner: req.userId })
-      .sort({ createdAt: -1 });
+    const items = await Item.find({ owner: req.userId }).sort({ createdAt: -1 });
     res.json(items);
   } catch (error) {
     console.error('Get my items error:', error);
@@ -226,7 +228,7 @@ export const getMyItems = async (req, res) => {
   }
 };
 
-// Get items by user
+// 7. Get items by user
 export const getItemsByUser = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -240,7 +242,7 @@ export const getItemsByUser = async (req, res) => {
   }
 };
 
-// Toggle availability (status change)
+// 8. Toggle availability (status change)
 export const toggleAvailability = async (req, res) => {
   try {
     const item = await Item.findById(req.params.id);
@@ -249,12 +251,10 @@ export const toggleAvailability = async (req, res) => {
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    // ✅ Check if the logged-in user is the owner
     if (item.owner.toString() !== req.userId) {
       return res.status(403).json({ error: 'Forbidden: You do not own this item' });
     }
 
-    // Toggle between 'available' and 'unavailable'
     item.status = item.status === 'available' ? 'unavailable' : 'available';
     await item.save();
 

@@ -1,27 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Menu, 
-  X, 
-  User, 
-  LogOut, 
-  Home, 
-  BookOpen, 
-  Calendar, 
-  Briefcase, 
-  Plus, 
-  MessageCircle, 
-  Search,
-  ChevronDown,
-  Settings,
-  HelpCircle,
-  Sun,
-  Moon,
-  Bell,
-  UserCircle,
-  Users,
-  Sparkles
+  Menu, X, LogOut, Home, BookOpen, Calendar, Briefcase, 
+  Plus, MessageCircle, Search, ChevronDown, Settings, 
+  Sun, Moon, Bell, UserCircle, Users 
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -32,7 +15,14 @@ const Navbar = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const profileRef = useRef(null);
+
+  // Close dropdowns on route change
+  useEffect(() => {
+    setIsProfileOpen(false);
+    setIsOpen(false);
+  }, [location.pathname]);
 
   // Handle click outside profile dropdown
   useEffect(() => {
@@ -45,7 +35,7 @@ const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Load dark mode preference
+  // Dark mode logic
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
@@ -54,7 +44,6 @@ const Navbar = () => {
     }
   }, []);
 
-  // Toggle dark mode
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -68,353 +57,193 @@ const Navbar = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
-    setIsOpen(false);
-    setIsProfileOpen(false);
   };
 
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/catalogue?search=${encodeURIComponent(searchQuery)}`);
-      setIsOpen(false);
     }
   };
 
   const navLinks = [
     { to: '/catalogue', label: 'Browse', icon: BookOpen },
+    { to: '/roommates', label: 'Roommates', icon: Home },
     { to: '/connections', label: 'Connections', icon: Users },
-    { to: '/events', label: 'Events', icon: Calendar },
-    { to: '/projects', label: 'Projects', icon: Briefcase },
   ];
 
-  // Profile dropdown items
   const profileItems = [
     { to: '/dashboard', label: 'Dashboard', icon: Home },
     { to: '/profile', label: 'My Profile', icon: UserCircle },
-    { to: '/connections', label: 'Connections', icon: Users },
-    { to: '/inbox', label: 'Inbox', icon: MessageCircle, badge: 3 },
+    { to: '/events', label: 'Events', icon: Calendar },
+    { to: '/projects', label: 'Projects', icon: Briefcase },
     { to: '/settings', label: 'Settings', icon: Settings },
-    { to: '/help', label: 'Help & Support', icon: HelpCircle },
   ];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-primary-900/90 backdrop-blur-lg border-b border-primary-200/30 dark:border-primary-800/30 shadow-sm transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
-            <img
-              src="/Buddy-logo.png"
-              alt="CollegeBuddy"
-              className="w-10 h-10 object-contain transition-transform group-hover:scale-110"
-            />
-            <span className="text-xl font-bold text-primary-800 dark:text-primary-100 font-display">
-              College<span className="text-primary-500">Buddy</span>
-            </span>
-          </Link>
+    <>
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-[#090933]/80 backdrop-blur-xl border-b border-gray-100 dark:border-white/5 transition-colors duration-300">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-[72px]">
+            
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-2.5 group">
+              <img src="/Buddy-logo.png" alt="CollegeBuddy" className="w-9 h-9 object-contain transition-transform group-hover:scale-105" />
+              <span className="text-[22px] font-bold text-[#090933] dark:text-white font-display tracking-tight">
+                College<span className="text-primary-500">Buddy</span>
+              </span>
+            </Link>
 
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-1 flex-1 justify-center px-4">
-            {/* Search Bar */}
-            <form onSubmit={handleSearch} className="relative flex-1 max-w-md">
-              <input
-                type="text"
-                placeholder="Search items, people, or departments..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 pl-10 text-sm bg-primary-50 dark:bg-primary-800/50 border border-primary-200 dark:border-primary-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/30 dark:focus:ring-primary-400/30 transition placeholder:text-gray-400 dark:placeholder:text-gray-500"
-              />
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={16} />
-            </form>
-          </div>
-
-          {/* Desktop Right Section */}
-          <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => {
-              const Icon = link.icon;
-              return (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-all ${
-                    link.label === 'Connections'
-                      ? 'bg-primary-50 dark:bg-primary-800/50 text-primary-600 dark:text-primary-400'
-                      : 'text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-800/50'
-                  }`}
-                >
-                  <Icon size={18} />
-                  {link.label}
-                  
-                </Link>
-              );
-            })}
-
-            {user && (
-              <>
-                <Link
-                  to="/add-item"
-                  className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 transition shadow-sm hover:shadow-md"
-                >
-                  <Plus size={18} /> Share
-                </Link>
-                <Link to="/inbox" className="p-2 text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-800/50 transition relative">
-                  <Bell size={20} />
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center animate-pulse">
-                    3
-                  </span>
-                </Link>
-              </>
-            )}
-
-            {/* Theme Toggle */}
-            <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className="p-2 text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-800/50 transition"
-              aria-label="Toggle dark mode"
-            >
-              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
-
-            {user ? (
-              <div className="relative ml-2" ref={profileRef}>
-                {/* Profile Button */}
-                <button
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex items-center gap-2 px-3 py-2 bg-primary-50 dark:bg-primary-800/50 rounded-xl hover:bg-primary-100 dark:hover:bg-primary-800 transition"
-                >
-                  {user.profileImage ? (
-                    <img src={user.profileImage} alt="Profile" className="w-8 h-8 rounded-full object-cover" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center text-white text-sm font-semibold">
-                      {user.name?.charAt(0) || 'U'}
-                    </div>
-                  )}
-                  <ChevronDown size={16} className={`text-gray-500 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {/* Profile Dropdown */}
-                <AnimatePresence>
-                  {isProfileOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 mt-2 w-56 bg-white dark:bg-primary-800 rounded-xl shadow-xl border border-primary-200/30 dark:border-primary-700/30 overflow-hidden"
-                    >
-                      {/* User Info */}
-                      <div className="px-4 py-3 border-b border-primary-200/30 dark:border-primary-700/30">
-                        <p className="font-semibold text-primary-800 dark:text-primary-100">
-                          {user.name}
-                        </p>
-                        <p className="text-xs text-primary-500 dark:text-primary-400">
-                          {user.email}
-                        </p>
-                        {user.department && (
-                          <span className="text-xs px-2 py-0.5 bg-primary-100 dark:bg-primary-700/50 text-primary-600 dark:text-primary-300 rounded-full mt-1 inline-block">
-                            {user.department}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Profile Links */}
-                      <div className="py-1">
-                        {profileItems.map((item) => {
-                          const Icon = item.icon;
-                          return (
-                            <Link
-                              key={item.to}
-                              to={item.to}
-                              onClick={() => setIsProfileOpen(false)}
-                              className="flex items-center justify-between px-4 py-2.5 text-sm text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-700/50 transition"
-                            >
-                              <span className="flex items-center gap-3">
-                                <Icon size={16} />
-                                {item.label}
-                              </span>
-                              {item.badge && (
-                                <span className="px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
-                                  {item.badge}
-                                </span>
-                              )}
-                              {item.label === 'Connections' && (
-                                <span className="px-2 py-0.5 text-xs bg-primary-500 text-white rounded-full">
-                                  New
-                                </span>
-                              )}
-                            </Link>
-                          );
-                        })}
-                      </div>
-
-                      {/* Logout */}
-                      <div className="border-t border-primary-200/30 dark:border-primary-700/30 py-1">
-                        <button
-                          onClick={handleLogout}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition w-full"
-                        >
-                          <LogOut size={16} />
-                          Logout
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 ml-2">
-                <Link
-                  to="/login"
-                  className="px-4 py-2 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-800/50 rounded-xl text-sm font-medium transition"
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  className="px-5 py-2 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 transition shadow-sm hover:shadow-md"
-                >
-                  Sign Up
-                </Link>
-              </div>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-primary-800/50 transition"
-            aria-label="Toggle menu"
-          >
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </div>
-
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="md:hidden py-4 border-t border-primary-200/30 dark:border-primary-800/30 space-y-1"
-            >
-              {/* Mobile Search */}
-              <form onSubmit={handleSearch} className="relative mb-3">
+            {/* Desktop Search - Centered */}
+            <div className="hidden lg:flex flex-1 justify-center px-8">
+              <form onSubmit={handleSearch} className="relative w-full max-w-md group">
                 <input
                   type="text"
-                  placeholder="Search items..."
+                  placeholder="Search textbooks, calculators, notes..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-3 pl-10 text-sm bg-primary-50 dark:bg-primary-800/50 border border-primary-200 dark:border-primary-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/30 transition"
+                  className="w-full px-4 py-2.5 pl-10 text-[15px] bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
                 />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-500 transition-colors" size={18} />
               </form>
+            </div>
 
-              {/* Mobile Theme Toggle */}
-              <button
-                onClick={() => setIsDarkMode(!isDarkMode)}
-                className="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-800/50 rounded-xl transition w-full"
-              >
+            {/* Desktop Right Section */}
+            <div className="hidden md:flex items-center gap-1.5">
+              {navLinks.map((link) => (
+                <Link key={link.to} to={link.to} className="px-3 py-2 text-[15px] font-medium text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  {link.label}
+                </Link>
+              ))}
+
+              <div className="w-px h-5 bg-gray-200 dark:bg-white/10 mx-2"></div>
+
+              {user && (
+                <>
+                  <Link to="/add-item" className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white rounded-full text-[14px] font-medium hover:bg-primary-700 transition-colors shadow-sm shadow-primary-500/20">
+                    <Plus size={16} /> Share
+                  </Link>
+                  
+                  <Link to="/chat" className="p-2.5 text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 rounded-full hover:bg-gray-50 dark:hover:bg-white/5 transition-colors relative">
+                    <MessageCircle size={20} />
+                  </Link>
+                </>
+              )}
+
+              <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2.5 text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 rounded-full hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                 {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-                {isDarkMode ? 'Light Mode' : 'Dark Mode'}
               </button>
 
+              {user ? (
+                <div className="relative ml-2" ref={profileRef}>
+                  <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="flex items-center gap-1.5 p-1 rounded-full hover:bg-gray-50 dark:hover:bg-white/5 transition-colors border border-transparent hover:border-gray-200 dark:hover:border-white/10">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary-500 to-secondary-500 flex items-center justify-center text-white text-sm font-bold shadow-inner">
+                      {user.name?.charAt(0) || 'U'}
+                    </div>
+                    <ChevronDown size={16} className={`text-gray-400 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  <AnimatePresence>
+                    {isProfileOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.98 }} 
+                        animate={{ opacity: 1, y: 0, scale: 1 }} 
+                        exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 mt-3 w-60 bg-white dark:bg-[#111128] rounded-2xl shadow-xl border border-gray-100 dark:border-white/10 overflow-hidden"
+                      >
+                        <div className="px-5 py-4 border-b border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/5">
+                          <p className="font-semibold text-gray-900 dark:text-white truncate">{user.name}</p>
+                          <p className="text-[13px] text-gray-500 truncate">{user.email}</p>
+                        </div>
+                        <div className="py-2">
+                          {profileItems.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                              <Link key={item.to} to={item.to} className="flex items-center gap-3 px-5 py-2.5 text-[14px] font-medium text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                <Icon size={17} /> {item.label}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                        <div className="border-t border-gray-100 dark:border-white/5 py-2">
+                          <button onClick={handleLogout} className="flex items-center gap-3 px-5 py-2.5 text-[14px] font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors w-full">
+                            <LogOut size={17} /> Logout
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 ml-2">
+                  <Link to="/login" className="text-[15px] font-medium text-gray-600 hover:text-primary-600 transition-colors">Log in</Link>
+                  <Link to="/register" className="px-5 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-[14px] font-semibold hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors shadow-sm">Sign up</Link>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button onClick={() => setIsOpen(!isOpen)} className="md:hidden p-2 text-gray-600 dark:text-gray-300">
+              {isOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed inset-0 top-[72px] z-40 bg-white dark:bg-[#090933] md:hidden flex flex-col px-6 py-6 overflow-y-auto"
+          >
+            <form onSubmit={handleSearch} className="relative mb-6">
+              <input
+                type="text"
+                placeholder="Search items..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-3 pl-11 text-[15px] bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+              />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            </form>
+
+            <div className="space-y-2">
               {navLinks.map((link) => {
                 const Icon = link.icon;
                 return (
-                  <Link
-                    key={link.to}
-                    to={link.to}
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-800/50 rounded-xl transition"
-                  >
-                    <Icon size={20} />
-                    {link.label}
-                    {link.label === 'Connections' && (
-                      <span className="ml-1 text-xs bg-primary-500 text-white px-1.5 py-0.5 rounded-full">
-                        New
-                      </span>
-                    )}
+                  <Link key={link.to} to={link.to} className="flex items-center gap-3 px-4 py-3 text-lg font-medium text-gray-700 hover:bg-gray-50 rounded-xl">
+                    <Icon size={20} className="text-gray-400" /> {link.label}
                   </Link>
                 );
               })}
-
-              {user ? (
-                <>
-                  <Link
-                    to="/add-item"
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-800/50 rounded-xl transition"
-                  >
-                    <Plus size={20} /> Share an Item
-                  </Link>
-                  <Link
-                    to="/dashboard"
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-800/50 rounded-xl transition"
-                  >
-                    <User size={20} /> Dashboard
-                  </Link>
-                  <Link
-                    to="/connections"
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-800/50 rounded-xl transition"
-                  >
-                    <Users size={20} /> Connections
-                    <span className="ml-1 text-xs bg-primary-500 text-white px-1.5 py-0.5 rounded-full">
-                      New
-                    </span>
-                  </Link>
-                  <Link
-                    to="/inbox"
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center justify-between px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-800/50 rounded-xl transition"
-                  >
-                    <span className="flex items-center gap-3">
-                      <MessageCircle size={20} /> Inbox
-                    </span>
-                    <span className="px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
-                      3
-                    </span>
-                  </Link>
-                  <Link
-                    to="/profile"
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-800/50 rounded-xl transition"
-                  >
-                    <UserCircle size={20} /> My Profile
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-3 px-4 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition w-full"
-                  >
-                    <LogOut size={20} /> Logout
-                  </button>
-                </>
-              ) : (
-                <div className="space-y-2 pt-2">
-                  <Link
-                    to="/login"
-                    onClick={() => setIsOpen(false)}
-                    className="block px-4 py-3 text-center text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-800/50 rounded-xl transition"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    to="/register"
-                    onClick={() => setIsOpen(false)}
-                    className="block px-4 py-3 text-center bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition"
-                  >
-                    Sign Up
-                  </Link>
-                </div>
+              
+              {user && (
+                <Link to="/add-item" className="flex items-center gap-3 px-4 py-3 text-lg font-medium text-primary-600 bg-primary-50 rounded-xl">
+                  <Plus size={20} /> Share an Item
+                </Link>
               )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </nav>
+            </div>
+            
+            <div className="mt-auto pt-6 border-t border-gray-100">
+               {user ? (
+                 <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 text-lg font-medium text-red-600 w-full">
+                   <LogOut size={20} /> Logout
+                 </button>
+               ) : (
+                 <div className="flex flex-col gap-3">
+                   <Link to="/login" className="w-full py-3 text-center text-lg font-medium border border-gray-200 rounded-xl">Log in</Link>
+                   <Link to="/register" className="w-full py-3 text-center text-lg font-medium bg-gray-900 text-white rounded-xl">Sign up</Link>
+                 </div>
+               )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 

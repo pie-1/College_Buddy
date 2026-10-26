@@ -5,7 +5,7 @@ const messageSchema = new mongoose.Schema(
     conversation: { type: mongoose.Schema.Types.ObjectId, ref: 'Conversation', required: true },
     sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    message: { type: String, required: true },
+    message: { type: String, required: true }, // Keeping 'message' to not break your controller
     read: { type: Boolean, default: false },
     readAt: { type: Date },
     type: {
@@ -17,7 +17,6 @@ const messageSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
 
 const Message = mongoose.model('Message', messageSchema);
 export default Message;
