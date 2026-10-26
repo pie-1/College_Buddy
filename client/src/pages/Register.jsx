@@ -30,13 +30,11 @@ const Register = () => {
     e.preventDefault();
     setError('');
 
-    // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
-    // Validate password length
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters');
       return;
@@ -45,15 +43,14 @@ const Register = () => {
     setLoading(true);
 
     try {
-      await register(
-        formData.name,
-        formData.email,
-        formData.password,
-        {
-          department: formData.department,
-          year: formData.year,
-        }
-      );
+      // FIXED: Map exactly to what the Zod validator expects
+      await register({
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        dept: formData.department.toUpperCase(), // 'computer' becomes 'COMPUTER'
+        year: Number(formData.year), // '1' becomes 1
+      });
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed. Please try again.');
@@ -79,13 +76,12 @@ const Register = () => {
 
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600 flex items-center gap-2 mb-4">
-              <AlertCircle size={18} />
+              <AlertCircle size={18} className="shrink-0" />
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Full Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
               <div className="relative">
@@ -102,7 +98,6 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
               <div className="relative">
@@ -119,7 +114,6 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Password */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
               <div className="relative">
@@ -143,7 +137,6 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Confirm Password */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm Password</label>
               <div className="relative">
@@ -167,7 +160,6 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Department */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Department</label>
               <div className="relative">
@@ -183,12 +175,11 @@ const Register = () => {
                   <option value="computer">💻 Computer Science</option>
                   <option value="civil">🏗️ Civil Engineering</option>
                   <option value="architecture">🏛️ Architecture</option>
-                  <option value="common">📚 Common</option>
+                  <option value="bit">📚 BIT</option>
                 </select>
               </div>
             </div>
 
-            {/* Year */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Year of Study</label>
               <div className="relative">
@@ -205,7 +196,6 @@ const Register = () => {
                   <option value="2">2nd Year</option>
                   <option value="3">3rd Year</option>
                   <option value="4">4th Year</option>
-                  <option value="5">5th Year</option>
                 </select>
               </div>
             </div>

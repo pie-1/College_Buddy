@@ -1,10 +1,8 @@
 import { createContext, useState, useEffect } from 'react';
 import api from '../api/client';
 
-// 1. Create the Context
 export const AuthContext = createContext(null);
 
-// 2. Create the Provider Component
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -38,7 +36,7 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   };
 
-  const register = async (userData) => {
+const register = async (userData) => {
     const response = await api.post('/auth/register', userData); 
     return response.data;
   };

@@ -1,30 +1,26 @@
 import express from 'express';
-import { requireAuth, requireRole } from '../middleware/auth.middleware.js';
-import { getUsers, getUser, updateUser, deleteUser } from '../controllers/userController.js';
+import { protect } from '../middleware/auth.js';
+import { 
+  getUsers, 
+  getUser, 
+  getRoommates, 
+  updateMe,
+  getMyProfile,
+  updateMyProfile 
+} from '../controllers/userController.js';
 
 const router = express.Router();
+router.use(protect);
 
-// ✅ Smoke Test 1: Valid Token -> 200 (and No token -> 401)
-// This specifically tests requireAuth
-router.get('/me', requireAuth, (req, res) => {
-  res.json({ 
-    success: true, 
-    message: "You have accessed a protected route!", 
-    user: req.user 
-  });
-});
+// 1. Roommates route 
+router.get('/roommates', getRoommates);
 
-// ✅ Smoke Test 2: Student calls admin route -> 403
-// This specifically tests requireRole('admin')
-router.get('/admin-test', requireAuth, requireRole('admin'), (req, res) => {
-  res.json({ message: "Welcome Admin!" });
-});
+// 2. Profile routes
+router.get('/me', getMyProfile);
+router.patch('/me/profile', updateMyProfile);
 
-// Regular protected routes
-// We use requireAuth here instead of the old 'protect' to test it out
-router.get('/', requireAuth, getUsers);
-router.get('/:id', requireAuth, getUser);
-router.put('/:id', requireAuth, updateUser);
-router.delete('/:id', requireAuth, deleteUser);
+// 3. Other routes
+router.get('/', getUsers);
+router.get('/:id', getUser);
 
 export default router;
