@@ -10,17 +10,13 @@ import cloudinary from '../config/cloudinary.js';
 // 1. Get all items with pagination (Issue #33)
 export const getItems = async (req, res) => {
   try {
-    // Default page=1, limit=12
     const page = parseInt(req.query.page) || 1;
     let limit = parseInt(req.query.limit) || 12;
     
-    // Cap the limit at 50
     if (limit > 50) limit = 50;
     if (limit < 1) limit = 1;
 
     const skip = (page - 1) * limit;
-
-    // Only return status 'available' by default
     const filter = { status: req.query.status || 'available' };
     
     if (req.query.category) filter.category = req.query.category;
@@ -28,14 +24,13 @@ export const getItems = async (req, res) => {
 
     const items = await Item.find(filter)
       .populate('owner', 'name avatar email trustScore dept') 
-      .sort({ createdAt: -1 }) // Newest first
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
     const total = await Item.countDocuments(filter);
     const totalPages = Math.ceil(total / limit);
 
-    // Exact format requested
     res.json({
       data: items,
       page,
@@ -51,19 +46,16 @@ export const getItems = async (req, res) => {
 // 2. Get single item (Issue #34)
 export const getItem = async (req, res) => {
   try {
-    // Validate ObjectId to prevent Mongoose crashes
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    // Atomically increment views by 1 and return the updated document
     const item = await Item.findByIdAndUpdate(
       req.params.id,
       { $inc: { views: 1 } },
       { new: true }
-    ).populate('owner', 'name avatar dept year trustScore'); // Populate specific fields
+    ).populate('owner', 'name avatar dept year trustScore');
 
-    // If item doesn't exist
     if (!item) {
       return res.status(404).json({ error: 'Item not found' });
     }
@@ -80,7 +72,6 @@ export const createItem = async (req, res) => {
   try {
     const { title, description, category, condition, tags } = req.body;
 
-    // RATE LIMIT: Max 5 items per user per day
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
@@ -96,7 +87,6 @@ export const createItem = async (req, res) => {
       });
     }
 
-    // Validate required fields
     if (!title || !description || !category || !condition) {
       return res.status(400).json({
         error: 'Missing required fields',
@@ -104,13 +94,11 @@ export const createItem = async (req, res) => {
       });
     }
 
-    // Handle tags
     let tagsArray = tags;
     if (typeof tags === 'string') {
       tagsArray = tags.split(',').map(tag => tag.trim());
     }
 
-    // Create item data
     const itemData = {
       title: title.trim(),
       description: description.trim(),
@@ -120,7 +108,6 @@ export const createItem = async (req, res) => {
       owner: req.userId,
     };
 
-    // Handle images (max 3)
     if (req.files && req.files.length > 0) {
       if (req.files.length > 3) {
         return res.status(400).json({ error: 'Maximum 3 images allowed' });
@@ -130,10 +117,8 @@ export const createItem = async (req, res) => {
       itemData.images = req.body.images;
     }
 
-    // Save to database
     const item = await Item.create(itemData);
 
-    // Populate owner minimal data
     await item.populate('owner', 'name avatar email');
 
     res.status(201).json({
@@ -158,7 +143,6 @@ export const updateItem = async (req, res) => {
 
     const { title, description, category, condition, tags, status } = req.body;
 
-    // Build update object
     const updateData = {};
     if (title) updateData.title = title.trim();
     if (description) updateData.description = description.trim();
@@ -204,7 +188,6 @@ export const deleteItem = async (req, res) => {
       return res.status(404).json({ error: 'Item not found or unauthorized' });
     }
 
-    // Delete images from Cloudinary
     if (item.images && item.images.length > 0) {
       for (const imageUrl of item.images) {
         try {
@@ -230,10 +213,13 @@ export const deleteItem = async (req, res) => {
   }
 };
 
-// 6. Get my items
+// 6. Get my items (For My Listings page)
 export const getMyItems = async (req, res) => {
   try {
-    const items = await Item.find({ owner: req.userId }).sort({ createdAt: -1 });
+    const items = await Item.find({ owner: req.userId })
+      .populate('owner', 'name avatar email') // ✅ Added populate just in case
+      .sort({ createdAt: -1 });
+      
     res.json(items);
   } catch (error) {
     console.error('Get my items error:', error);
@@ -264,7 +250,6 @@ export const toggleAvailability = async (req, res) => {
       return res.status(404).json({ error: 'Item not found or unauthorized' });
     }
 
-    // Toggle between 'available' and 'unavailable'
     item.status = item.status === 'available' ? 'unavailable' : 'available';
     await item.save();
 
