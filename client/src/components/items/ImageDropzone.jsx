@@ -51,19 +51,19 @@ const ImageDropzone = ({ files = [], onChange }) => {
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
-        className={`block w-full p-6 border-2 border-dashed rounded-xl text-center cursor-pointer transition ${
+        className={`block w-full cursor-pointer rounded-2xl border-2 border-dashed p-6 text-center transition duration-200 focus-within:outline-none focus-within:ring-4 focus-within:ring-primary-500/20 ${
           dragOver
-            ? 'border-primary-500 bg-primary-50'
-            : 'border-gray-300 hover:border-primary-400 bg-gray-50'
+            ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30'
+            : 'border-slate-300 bg-slate-50 hover:border-primary-500 hover:bg-primary-50/70 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700'
         } ${files.length >= MAX_IMAGES ? 'opacity-50 pointer-events-none' : ''}`}
       >
-        <Upload className="mx-auto mb-2 text-gray-400" size={24} />
-        <p className="text-sm text-gray-600">
+        <Upload className="mx-auto mb-2 text-primary-700 dark:text-primary-300" size={24} />
+        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
           {files.length >= MAX_IMAGES
             ? 'Maximum 3 images reached'
-            : 'Drag & drop or click to upload'}
+            : 'Drag and drop, or click to upload'}
         </p>
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="mt-1 text-xs font-medium text-slate-600 dark:text-slate-400">
           {files.length}/{MAX_IMAGES} images • JPG, PNG, WEBP (max 5MB each)
         </p>
         <input
@@ -72,7 +72,7 @@ const ImageDropzone = ({ files = [], onChange }) => {
           accept="image/*"
           multiple
           onChange={handleFileInput}
-          className="hidden"
+          className="sr-only"
         />
       </label>
 
@@ -86,7 +86,7 @@ const ImageDropzone = ({ files = [], onChange }) => {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.5, opacity: 0 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                className="relative aspect-square rounded-lg overflow-hidden bg-gray-100"
+                className="relative aspect-square overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700"
               >
                 <img
                   src={f.preview}
@@ -96,7 +96,8 @@ const ImageDropzone = ({ files = [], onChange }) => {
                 <button
                   type="button"
                   onClick={() => removeImage(f.id)}
-                  className="absolute top-1 right-1 p-1 bg-black/60 text-white rounded-full hover:bg-black/80 transition"
+                  aria-label="Remove image"
+                  className="absolute right-2 top-2 rounded-full bg-slate-950/80 p-1.5 text-white shadow transition hover:scale-110 hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                 >
                   <X size={12} />
                 </button>

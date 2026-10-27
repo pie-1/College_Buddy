@@ -20,7 +20,7 @@ import Inbox from './pages/Inbox';
 import Events from './pages/Events';
 import Projects from './pages/Projects';
 import Onboarding from './pages/Onboarding';
-import CreateItem from './pages/items/CreateItem'; // NEW
+import CreateItem from './pages/items/CreateItem';
 import ItemDetail from './pages/items/ItemDetail'; // NEW
 
 function App() {
@@ -35,9 +35,9 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/catalogue" element={<Catalogue />} />
-            <Route path="/items/:id" element={<ItemDetail />} /> {/* Public Item Detail */}
+            <Route path="/items/:id" element={<ItemDetail />} /> {/* NEW */}
 
-            {/* Protected Routes (Requires Login) */}
+            {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/dashboard" element={<Dashboard />} />
@@ -46,7 +46,7 @@ function App() {
               <Route path="/inbox" element={<Inbox />} />
               <Route path="/events" element={<Events />} />
               <Route path="/projects" element={<Projects />} />
-              <Route path="/items/new" element={<CreateItem />} /> {/* NEW: Create Item */}
+              <Route path="/items/new" element={<CreateItem />} />
             </Route>
 
             {/* Admin Routes */}
