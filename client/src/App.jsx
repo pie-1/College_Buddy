@@ -10,7 +10,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Catalogue from './pages/Catalogue';
-import MyListings from './pages/MyListings'; // ✅ Added import
+import MyListings from './pages/MyListings';
+import ItemDetail from './pages/ItemDetail'; // ✅ Added import
 import ConnectionsPage from './pages/ConnectionsPage'; 
 import Profile from './pages/Profile';
 import Inbox from './pages/Inbox';
@@ -33,6 +34,9 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/catalogue" element={<Catalogue />} />
+            
+            {/* ✅ Added Item Detail Route */}
+            <Route path="/items/:id" element={<ItemDetail />} />
             
             {/* ✅ Added MyListings Route */}
             <Route path="/my-listings" element={<MyListings />} /> 

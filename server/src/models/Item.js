@@ -24,6 +24,17 @@ const itemSchema = new mongoose.Schema(
     images: [{ 
       type: String 
     }],
+    pdfUrl: { 
+      type: String 
+    },
+    listingType: {
+      type: String,
+      enum: ['borrow', 'sell', 'buy'],
+      default: 'borrow',
+    },
+    price: {
+      type: Number,
+    },
     tags: [{ 
       type: String 
     }],

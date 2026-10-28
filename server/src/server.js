@@ -4,10 +4,11 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import connectDB from './config/database.js';
 import { setupSocket } from './config/socket.js';
 
-// Routes
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import itemRoutes from './routes/itemRoutes.js';
@@ -28,17 +29,24 @@ const io = new Server(httpServer, {
   },
 });
 
-app.use(helmet());
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 connectDB();
 setupSocket(io);
 
-// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/borrow', borrowRoutes);
@@ -48,12 +56,10 @@ app.use('/api/events', eventRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/upload', uploadRoutes);
 
-// health check route
 app.get('/api/health', (req, res) => {
     res.json({ status: "ok", message: "Server is running" });
 });
 
-// error handler
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({ error: err.message || "Internal Server Error" });

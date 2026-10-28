@@ -1,13 +1,12 @@
 import mongoose from 'mongoose';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import Item from '../models/Item.js';
-import cloudinary from '../config/cloudinary.js';
 
-/**
- * Item Controller
- * Handles all item-related operations
- */
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// 1. Get all items with pagination (Issue #33)
 export const getItems = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -43,7 +42,6 @@ export const getItems = async (req, res) => {
   }
 };
 
-// 2. Get single item (Issue #34)
 export const getItem = async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
@@ -67,7 +65,6 @@ export const getItem = async (req, res) => {
   }
 };
 
-// 3. Create item (Protected + Zod validated + Rate limited)
 export const createItem = async (req, res) => {
   try {
     const { title, description, category, condition, tags } = req.body;
@@ -112,13 +109,28 @@ export const createItem = async (req, res) => {
       if (req.files.length > 3) {
         return res.status(400).json({ error: 'Maximum 3 images allowed' });
       }
-      itemData.images = req.files.map((file) => file.path);
+      
+      const imagesArray = [];
+      let pdfUrl = null;
+
+      for (const file of req.files) {
+        const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
+        
+        if (file.mimetype === 'application/pdf') {
+          pdfUrl = fileUrl;
+        } else {
+          imagesArray.push(fileUrl);
+        }
+      }
+
+      if (imagesArray.length > 0) itemData.images = imagesArray;
+      if (pdfUrl) itemData.pdfUrl = pdfUrl;
+
     } else if (req.body.images) {
       itemData.images = req.body.images;
     }
 
     const item = await Item.create(itemData);
-
     await item.populate('owner', 'name avatar email');
 
     res.status(201).json({
@@ -132,7 +144,6 @@ export const createItem = async (req, res) => {
   }
 };
 
-// 4. Update item
 export const updateItem = async (req, res) => {
   try {
     const item = await Item.findOne({ _id: req.params.id, owner: req.userId });
@@ -158,7 +169,12 @@ export const updateItem = async (req, res) => {
       if (req.files.length > 3) {
         return res.status(400).json({ error: 'Maximum 3 images allowed' });
       }
-      const newImageUrls = req.files.map(file => file.path);
+      
+      const newImageUrls = [];
+      for (const file of req.files) {
+        newImageUrls.push(`${req.protocol}://${req.get('host')}/uploads/${file.filename}`);
+      }
+      
       updateData.images = [...(item.images || []), ...newImageUrls];
     }
 
@@ -179,7 +195,6 @@ export const updateItem = async (req, res) => {
   }
 };
 
-// 5. Delete item
 export const deleteItem = async (req, res) => {
   try {
     const item = await Item.findOne({ _id: req.params.id, owner: req.userId });
@@ -191,9 +206,11 @@ export const deleteItem = async (req, res) => {
     if (item.images && item.images.length > 0) {
       for (const imageUrl of item.images) {
         try {
-          const publicId = imageUrl.split('/').pop()?.split('.')[0];
-          if (publicId) {
-            await cloudinary.uploader.destroy(`collegebuddy/${publicId}`);
+          const filename = imageUrl.split('/').pop();
+          const filePath = path.join(__dirname, '../uploads', filename);
+          
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
           }
         } catch (err) {
           console.error('Failed to delete image:', err);
@@ -213,11 +230,10 @@ export const deleteItem = async (req, res) => {
   }
 };
 
-// 6. Get my items (For My Listings page)
 export const getMyItems = async (req, res) => {
   try {
     const items = await Item.find({ owner: req.userId })
-      .populate('owner', 'name avatar email') // ✅ Added populate just in case
+      .populate('owner', 'name avatar email')
       .sort({ createdAt: -1 });
       
     res.json(items);
@@ -227,7 +243,6 @@ export const getMyItems = async (req, res) => {
   }
 };
 
-// 7. Get items by user
 export const getItemsByUser = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -241,7 +256,6 @@ export const getItemsByUser = async (req, res) => {
   }
 };
 
-// 8. Toggle availability (status change)
 export const toggleAvailability = async (req, res) => {
   try {
     const item = await Item.findOne({ _id: req.params.id, owner: req.userId });

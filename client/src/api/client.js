@@ -10,7 +10,6 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Request interceptor - Add token to every request
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
@@ -22,13 +21,11 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor - Handle token refresh
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Skip refresh logic for login/register requests
     if (
       originalRequest.url?.includes('/auth/login') ||
       originalRequest.url?.includes('/auth/register') ||
@@ -41,7 +38,6 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       try {
         const refreshToken = localStorage.getItem('refreshToken');
-        // ✅ Fixed: Uses full API_URL
         const response = await axios.post(`${API_URL}/auth/refresh-token`, { refreshToken });
         
         localStorage.setItem('accessToken', response.data.accessToken);
