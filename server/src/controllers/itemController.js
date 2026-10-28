@@ -131,6 +131,7 @@ export const createItem = async (req, res) => {
     }
 
     const item = await Item.create(itemData);
+    
     await item.populate('owner', 'name avatar email');
 
     res.status(201).json({
@@ -146,23 +147,26 @@ export const createItem = async (req, res) => {
 
 export const updateItem = async (req, res) => {
   try {
-    const item = await Item.findOne({ _id: req.params.id, owner: req.userId });
+    const item = await Item.findById(req.params.id);
 
     if (!item) {
-      return res.status(404).json({ error: 'Item not found or unauthorized' });
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    if (item.owner.toString() !== req.userId) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this item' });
     }
 
     const { title, description, category, condition, tags, status } = req.body;
 
-    const updateData = {};
-    if (title) updateData.title = title.trim();
-    if (description) updateData.description = description.trim();
-    if (category) updateData.category = category;
-    if (condition) updateData.condition = condition;
-    if (status) updateData.status = status;
+    if (title) item.title = title.trim();
+    if (description) item.description = description.trim();
+    if (category) item.category = category;
+    if (condition) item.condition = condition;
+    if (status) item.status = status;
     
     if (tags) {
-      updateData.tags = typeof tags === 'string' ? tags.split(',').map(t => t.trim()) : tags;
+      item.tags = typeof tags === 'string' ? tags.split(',').map(t => t.trim()) : tags;
     }
 
     if (req.files && req.files.length > 0) {
@@ -175,14 +179,11 @@ export const updateItem = async (req, res) => {
         newImageUrls.push(`${req.protocol}://${req.get('host')}/uploads/${file.filename}`);
       }
       
-      updateData.images = [...(item.images || []), ...newImageUrls];
+      item.images = [...(item.images || []), ...newImageUrls];
     }
 
-    const updatedItem = await Item.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true, runValidators: true }
-    ).populate('owner', 'name avatar email dept');
+    const updatedItem = await item.save();
+    await updatedItem.populate('owner', 'name avatar email dept');
 
     res.json({
       success: true,
@@ -197,10 +198,14 @@ export const updateItem = async (req, res) => {
 
 export const deleteItem = async (req, res) => {
   try {
-    const item = await Item.findOne({ _id: req.params.id, owner: req.userId });
+    const item = await Item.findById(req.params.id);
 
     if (!item) {
-      return res.status(404).json({ error: 'Item not found or unauthorized' });
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    if (item.owner.toString() !== req.userId) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this item' });
     }
 
     if (item.images && item.images.length > 0) {
@@ -258,10 +263,14 @@ export const getItemsByUser = async (req, res) => {
 
 export const toggleAvailability = async (req, res) => {
   try {
-    const item = await Item.findOne({ _id: req.params.id, owner: req.userId });
+    const item = await Item.findById(req.params.id);
 
     if (!item) {
-      return res.status(404).json({ error: 'Item not found or unauthorized' });
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    if (item.owner.toString() !== req.userId) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this item' });
     }
 
     item.status = item.status === 'available' ? 'unavailable' : 'available';

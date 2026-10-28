@@ -17,24 +17,36 @@ export const createItemSchema = z.object({
   }),
   listingType: z.enum(['borrow', 'sell', 'buy'], {
     errorMap: () => ({ message: 'Listing type must be borrow, sell, or buy' }),
-  }).optional(),
+  }).default('borrow'), // Default to borrow
   price: z.coerce.number().min(0, 'Price cannot be negative').optional(),
+  wantedTags: z.array(z.string()).optional(),
   images: z.array(z.string()).max(3, 'Maximum 3 images allowed').optional(),
   tags: z.array(z.string()).optional(),
 }).refine((data) => {
-  if ((data.listingType === 'sell' || data.listingType === 'buy') && !data.price) {
+  if ((data.listingType === 'sell' || data.listingType === 'buy') && data.price === undefined) {
     return false;
   }
   return true;
 }, {
   message: "Price is required for Sell or Buy listings",
   path: ["price"],
+}).refine((data) => {
+  if (data.listingType === 'buy' && (!data.wantedTags || data.wantedTags.length === 0)) {
+    return false;
+  }
+  return true;
+}, {
+  message: "wantedTags is required when listing type is buy",
+  path: ["wantedTags"],
 });
 
 export const validateCreateItem = (req, res, next) => {
-  // Pre-process tags
+  // Pre-process tags and wantedTags
   if (typeof req.body.tags === 'string') {
     req.body.tags = req.body.tags.split(',').map((tag) => tag.trim());
+  }
+  if (typeof req.body.wantedTags === 'string') {
+    req.body.wantedTags = req.body.wantedTags.split(',').map((tag) => tag.trim());
   }
 
   // Convert price to number if it comes as a string from FormData

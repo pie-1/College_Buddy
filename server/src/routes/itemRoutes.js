@@ -1,6 +1,7 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.middleware.js'; 
 import { validateCreateItem } from '../validators/item.validator.js'; 
+import { uploadMultiple } from '../middleware/upload.js';
 import {
   getItems,
   getItem,
@@ -11,7 +12,6 @@ import {
   getItemsByUser,
   toggleAvailability,
 } from '../controllers/itemController.js';
-import { uploadMultiple } from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -19,8 +19,8 @@ const router = express.Router();
 router.get('/', getItems);
 router.get('/:id', getItem);
 
-// Protected routes
-router.use(requireAuth); // All routes below require authentication
+// Protected routes (All routes below require authentication)
+router.use(requireAuth); 
 
 router.get('/my/items', getMyItems);
 router.get('/user/:userId', getItemsByUser);
@@ -28,8 +28,13 @@ router.get('/user/:userId', getItemsByUser);
 // POST /api/items (protected + Zod validation + file upload support)
 router.post('/', uploadMultiple, validateCreateItem, createItem);
 
-router.put('/:id', uploadMultiple, updateItem);
+// Update item
+router.patch('/:id', uploadMultiple, updateItem);
+
+// Toggle availability
 router.patch('/:id/toggle', toggleAvailability);
+
+// Delete item
 router.delete('/:id', deleteItem);
 
 export default router;

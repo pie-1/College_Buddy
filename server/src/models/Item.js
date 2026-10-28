@@ -2,15 +2,8 @@ import mongoose from 'mongoose';
 
 const itemSchema = new mongoose.Schema(
   {
-    title: { 
-      type: String, 
-      required: true, 
-      trim: true 
-    },
-    description: { 
-      type: String, 
-      required: true 
-    },
+    title: { type: String, required: true, trim: true },
+    description: { type: String, required: true },
     category: {
       type: String,
       enum: ['BOOKS', 'TOOLS', 'NOTES', 'GAMES', 'ELECTRONICS', 'OTHER'],
@@ -21,12 +14,21 @@ const itemSchema = new mongoose.Schema(
       enum: ['NEW', 'GOOD', 'FAIR', 'WORN'],
       required: true,
     },
-    images: [{ 
-      type: String 
-    }],
-    pdfUrl: { 
-      type: String 
+    images: [{ type: String }],
+    pdfUrl: { type: String },
+    tags: [{ type: String }],
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
     },
+    status: {
+      type: String,
+      enum: ['available', 'borrowed', 'unavailable'],
+      default: 'available',
+    },
+    views: { type: Number, default: 0 },
+
     listingType: {
       type: String,
       enum: ['borrow', 'sell', 'buy'],
@@ -35,33 +37,33 @@ const itemSchema = new mongoose.Schema(
     price: {
       type: Number,
     },
-    tags: [{ 
-      type: String 
-    }],
-    owner: { 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: 'User', 
-      required: true 
-    },
-    status: {
-      type: String,
-      enum: ['available', 'borrowed', 'unavailable'],
-      default: 'available',
-    },
-    views: { 
-      type: Number, 
-      default: 0 
-    },
+    wantedTags: [{ type: String }],
   },
   { timestamps: true }
 );
 
-// Validation to ensure max 3 images
-itemSchema.path('images').validate(function (value) {
+
   return value.length <= 3;
 }, 'You can upload a maximum of 3 images.');
 
-// Indexes
+
+itemSchema.pre('validate', function (next) {
+  if (this.listingType === 'sell' || this.listingType === 'buy') {
+    if (!this.price) {
+      this.invalidate('price', 'Price is required when listing type is sell or buy.');
+    }
+  }
+
+  if (this.listingType === 'buy') {
+    if (!this.wantedTags || this.wantedTags.length === 0) {
+      this.invalidate('wantedTags', 'wantedTags is required when listing type is buy.');
+    }
+  }
+
+  next();
+});
+
+
 itemSchema.index({ title: 'text', tags: 'text' });
 itemSchema.index({ category: 1 });
 itemSchema.index({ owner: 1 });
