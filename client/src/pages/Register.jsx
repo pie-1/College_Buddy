@@ -10,8 +10,8 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    department: '',
-    year: '',
+    faculty: '',
+    semester: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,26 +30,35 @@ const Register = () => {
     e.preventDefault();
     setError('');
 
+    // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
+    // Validate password length
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters');
+      return;
+    }
+
+    // ✅ Validate college email (.edu.np)
+    if (!formData.email.toLowerCase().endsWith('.edu.np')) {
+      setError('Please use your college email (.edu.np)');
       return;
     }
 
     setLoading(true);
 
     try {
-      // FIXED: Map exactly to what the Zod validator expects
+      // ✅ Send ONE object that matches the backend Mongoose schema
       await register({
-        name: formData.name.trim(),
-        email: formData.email.trim().toLowerCase(),
+        name: formData.name,
+        email: formData.email,
         password: formData.password,
-        dept: formData.department.toUpperCase(), // 'computer' becomes 'COMPUTER'
-        year: Number(formData.year), // '1' becomes 1
+        faculty: formData.faculty,
+        studentStatus: 'current',
+        semester: parseInt(formData.semester),
       });
       navigate('/');
     } catch (err) {
@@ -76,12 +85,13 @@ const Register = () => {
 
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600 flex items-center gap-2 mb-4">
-              <AlertCircle size={18} className="shrink-0" />
+              <AlertCircle size={18} />
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Full Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
               <div className="relative">
@@ -98,8 +108,9 @@ const Register = () => {
               </div>
             </div>
 
+            {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">College Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
@@ -114,6 +125,7 @@ const Register = () => {
               </div>
             </div>
 
+            {/* Password */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
               <div className="relative">
@@ -137,6 +149,7 @@ const Register = () => {
               </div>
             </div>
 
+            {/* Confirm Password */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm Password</label>
               <div className="relative">
@@ -160,42 +173,48 @@ const Register = () => {
               </div>
             </div>
 
+            {/* Faculty */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Department</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Faculty</label>
               <div className="relative">
                 <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <select
-                  name="department"
-                  value={formData.department}
+                  name="faculty"
+                  value={formData.faculty}
                   onChange={handleChange}
                   required
                   className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition appearance-none"
                 >
-                  <option value="">Select your department</option>
-                  <option value="computer">💻 Computer Science</option>
-                  <option value="civil">🏗️ Civil Engineering</option>
-                  <option value="architecture">🏛️ Architecture</option>
-                  <option value="bit">📚 BIT</option>
+                  <option value="">Select your faculty</option>
+                  <option value="BE Computer">💻 BE Computer</option>
+                  <option value="Civil">🏗️ Civil</option>
+                  <option value="Architecture">🏛️ Architecture</option>
+                  <option value="BIT">📚 BIT</option>
                 </select>
               </div>
             </div>
 
+            {/* Semester */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Year of Study</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Semester</label>
               <div className="relative">
                 <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <select
-                  name="year"
-                  value={formData.year}
+                  name="semester"
+                  value={formData.semester}
                   onChange={handleChange}
                   required
                   className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition appearance-none"
                 >
-                  <option value="">Select your year</option>
-                  <option value="1">1st Year</option>
-                  <option value="2">2nd Year</option>
-                  <option value="3">3rd Year</option>
-                  <option value="4">4th Year</option>
+                  <option value="">Select your semester</option>
+                  <option value="1">1st Semester</option>
+                  <option value="2">2nd Semester</option>
+                  <option value="3">3rd Semester</option>
+                  <option value="4">4th Semester</option>
+                  <option value="5">5th Semester</option>
+                  <option value="6">6th Semester</option>
+                  <option value="7">7th Semester</option>
+                  <option value="8">8th Semester</option>
                 </select>
               </div>
             </div>
@@ -209,17 +228,6 @@ const Register = () => {
               {loading ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
-
-          <p className="mt-4 text-center text-xs text-gray-500">
-            By creating an account, you agree to our{' '}
-            <Link to="/terms" className="text-primary-600 hover:underline">
-              Terms of Service
-            </Link>
-            {' '}and{' '}
-            <Link to="/privacy" className="text-primary-600 hover:underline">
-              Privacy Policy
-            </Link>
-          </p>
 
           <p className="mt-6 text-center text-sm text-gray-600">
             Already have an account?{' '}
