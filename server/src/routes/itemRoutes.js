@@ -19,8 +19,8 @@ const router = express.Router();
 router.get('/', getItems);
 router.get('/:id', getItem);
 
-// Protected routes
-router.use(requireAuth);
+// Protected routes (All routes below require authentication)
+router.use(requireAuth); 
 
 router.get('/my/items', getMyItems);
 router.get('/user/:userId', getItemsByUser);
@@ -28,7 +28,7 @@ router.get('/user/:userId', getItemsByUser);
 // POST /api/items (protected + Zod validation + file upload support)
 router.post('/', uploadMultiple, validateCreateItem, createItem);
 
-// Update item (PATCH method)
+// Update item
 router.patch('/:id', uploadMultiple, updateItem);
 
 // Toggle availability

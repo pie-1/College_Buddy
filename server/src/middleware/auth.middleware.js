@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
 export const requireAuth = async (req, res, next) => {
   try {
@@ -12,6 +13,7 @@ export const requireAuth = async (req, res, next) => {
 
     // Attach user ID to request
     req.userId = decoded.id;
+    
     next();
   } catch (error) {
     console.error('Auth middleware error:', error.message);
