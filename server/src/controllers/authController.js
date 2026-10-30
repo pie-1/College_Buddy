@@ -7,8 +7,8 @@ import crypto from 'crypto';
 // Register new user
 export const register = async (req, res) => {
   try {
-    // 1. Get the exact fields the frontend sends (matches Zod)
-    const { name, email, password, dept, year } = req.body;
+    // 1. Get fields (support both new and old frontend formats)
+    let { name, email, password, dept, year, faculty, semester } = req.body;
 
     // 2. Check if user exists
     const existingUser = await User.findOne({ email });
@@ -16,10 +16,30 @@ export const register = async (req, res) => {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // 3. Generate verification token
+    // 3. Map old fields to new strict enums if necessary
+    if (!dept && faculty) {
+      const facultyMap = {
+        'BE Computer': 'COMPUTER',
+        'Civil': 'CIVIL',
+        'Architecture': 'ARCHI',
+        'BIT': 'BIT'
+      };
+      dept = facultyMap[faculty] || 'COMPUTER';
+    }
+
+    if (!year && semester) {
+      // Map semesters 1-8 to years 1-4
+      year = Math.ceil(parseInt(semester) / 2);
+    }
+
+    // Defaults if still missing
+    dept = dept || 'COMPUTER';
+    year = year || 1;
+
+    // 4. Generate verification token
     const verificationToken = crypto.randomBytes(32).toString('hex');
 
-    // 4. Create user (Password is hashed automatically by User.js pre-save hook)
+    // 5. Create user (Password is hashed automatically by User.js pre-save hook)
     const user = await User.create({
       name,
       email,
@@ -27,14 +47,23 @@ export const register = async (req, res) => {
       dept,
       year,
       verificationToken,
+      isVerified: process.env.NODE_ENV === 'development' ? true : false, // Auto verify in dev
     });
 
-    // 5. Send verification email
-    // await sendVerificationEmail(user.email, verificationToken); // Commented out for testing
+    // 6. Send verification email (Only in production)
+    if (process.env.NODE_ENV !== 'development') {
+      try {
+        await sendVerificationEmail(user.email, verificationToken);
+      } catch (emailError) {
+        console.error('Email send failed:', emailError.message);
+      }
+    }
 
     res.status(201).json({
       success: true,
-      message: 'User registered. Please verify your email.',
+      message: process.env.NODE_ENV === 'development' 
+        ? 'User registered (auto-verified in development)' 
+        : 'User registered. Please verify your email.',
       user: {
         id: user._id,
         name: user.name,
@@ -59,9 +88,10 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // if (!user.isVerified) {
-    //   return res.status(401).json({ error: 'Please verify your email first' });
-    // } // Commented out for local testing
+    // Check verification (skip in dev mode)
+    if (!user.isVerified && process.env.NODE_ENV !== 'development') {
+      return res.status(401).json({ error: 'Please verify your email first' });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {

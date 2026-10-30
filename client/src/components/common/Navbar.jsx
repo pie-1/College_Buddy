@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Menu, X, LogOut, Home, BookOpen, Calendar, Briefcase, 
   Plus, MessageCircle, Search, ChevronDown, Settings, 
-  Sun, Moon, Bell, UserCircle, Users 
+  Sun, Moon, Bell, UserCircle, Users, Package // ✅ Added Package here
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -68,6 +68,7 @@ const Navbar = () => {
 
   const navLinks = [
     { to: '/catalogue', label: 'Browse', icon: BookOpen },
+    { to: '/my-listings', label: 'My Listings', icon: Package },
     { to: '/roommates', label: 'Roommates', icon: Home },
     { to: '/connections', label: 'Connections', icon: Users },
   ];

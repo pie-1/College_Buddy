@@ -10,7 +10,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Catalogue from './pages/Catalogue';
-import ConnectionsPage from './pages/ConnectionsPage'; // ← FIXED: Use the correct filename
+import MyListings from './pages/MyListings';
+import ItemDetail from './pages/ItemDetail'; // ✅ Added import
+import ConnectionsPage from './pages/ConnectionsPage'; 
 import Profile from './pages/Profile';
 import Inbox from './pages/Inbox';
 import Events from './pages/Events';
@@ -18,7 +20,6 @@ import Projects from './pages/Projects';
 import AddItem from './pages/AddItem';
 import Chat from './pages/Chat.jsx';
 import Roommates from './pages/Roommates';
-
 
 
 function App() {
@@ -33,7 +34,14 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/catalogue" element={<Catalogue />} />
-            <Route path="/connections" element={<ConnectionsPage />} /> {/* ← FIXED: Use ConnectionsPage component */}
+            
+            {/* ✅ Added Item Detail Route */}
+            <Route path="/items/:id" element={<ItemDetail />} />
+            
+            {/* ✅ Added MyListings Route */}
+            <Route path="/my-listings" element={<MyListings />} /> 
+            
+            <Route path="/connections" element={<ConnectionsPage />} />
             <Route path="/profile/:userId?" element={<Profile />} />
             <Route path="/inbox" element={<Inbox />} />
             <Route path="/events" element={<Events />} />

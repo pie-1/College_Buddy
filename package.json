@@ -25,7 +25,9 @@
     "mongoose": "^8.18.0",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.5",
+    "react-hook-form": "^7.87.0",
     "socket.io": "^4.8.1",
+    "streamifier": "^0.1.1",
     "xss": "^1.0.15",
     "zod": "^4.6.7"
   },

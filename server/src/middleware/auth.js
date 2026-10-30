@@ -1,12 +1,6 @@
 import { verifyToken } from '../services/tokenService.js';
 import User from '../models/User.js';
 
-/**
- * Authentication Middleware
- * @todo Add role-based access control
- * @todo Add rate limiting per user
- */
-
 export const protect = async (req, res, next) => {
   try {
     let token;
@@ -30,18 +24,18 @@ export const protect = async (req, res, next) => {
     req.userId = user._id;
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expired' });
+    }
     return res.status(401).json({ error: 'Not authorized, token failed' });
   }
 };
-
 
 export const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authorized' });
     }
-    
     next();
-  };
+  }; 
 };
